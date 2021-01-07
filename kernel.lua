@@ -1,24 +1,30 @@
 -- Cynosure kernel.  Should (TM) be mostly drop-in compatible with Paragon. --
 -- Might even be better.  Famous last words!
 
-_G.k = { args = table.pack(...), modules = {} }
+_G.k = { cmdline = table.pack(...), modules = {} }
+do
+  local start = computer.uptime()
+  function k.uptime()
+    return computer.uptime() - start
+  end
+end
 
 -- kernel arguments
 
 do
   local arg_pattern = "^(.-)=(.+)$"
-  local orig_args = k.args
-  k.args = {}
+  local orig_args = k.cmdline
+  k.cmdline = {}
 
   for i=1, orig_args.n, 1 do
     local arg = orig_args[i]
     if arg:match(arg_pattern) then
       local k, v = arg:match(arg_pattern)
       if k and v then
-        k.args[k] = v
+        k.cmdline[k] = tonumber(v) or v
       end
     else
-      k.args[arg] = true
+      k.cmdline[arg] = true
     end
   end
 end
@@ -30,6 +36,7 @@ do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
   k._VERSION = ""
+  _G._OSVERSION = string.format("%s r%s %s", k._NAME, k._RELEASE, k._VERSION)
 end
 
 
@@ -50,7 +57,7 @@ do
   -- pop characters from the end of a string
   local function pop(str, n)
     local ret = str:sub(1, n)
-    local also = str:sub(#ret + 1)
+    local also = str:sub(#ret + 1, -1)
     return also, ret
   end
 
@@ -74,10 +81,11 @@ do
   end
 
   local function write(self, str)
-    for line in str:gmatch("[^\n]+") do
-      while #line > 0 do
+    for line in str:gmatch("([^\n]+)") do
+      local rline = line
+      while #rline > 0 do
         local to_write
-        to_write, line = pop(line, self.w - self.cx + 1)
+        rline, to_write = pop(rline, self.w - self.cx + 1)
         self.gpu.set(self.cx, self.cy, to_write)
         self.cx = self.cx + #to_write
         wrap_cursor(self)
@@ -117,16 +125,62 @@ do
     self.cx = self.cx - n
   end
 
+  function commands:G()
+    self.cx = 1
+  end
+
+  function commands:H(args)
+    local y, x = 1, 1
+    y = args[1] or y
+    x = args[2] or x
+    self.cx = x
+    self.cy = y
+    wrap_cursor(self)
+  end
+
   -- clear a portion of the screen
   function commands:J(args)
+    local n = args[1] or 0
+    if n == 0 then
+      self.gpu.fill(1, self.cy, self.w, self.h, " ")
+    elseif n == 1 then
+      self.gpu.fill(1, 1, self.w, self.cy, " ")
+    elseif n == 2 then
+      self.gpu.fill(1, 1, self.w, self.h, " ")
+    end
   end
   
   -- clear a portion of the current line
   function commands:K(args)
+    local n = args[1] or 0
+    if n == 0 then
+      self.gpu.fill(self.cx, self.cy, self.w, 1, " ")
+    elseif n == 1 then
+      self.gpu.fill(1, self.cy, self.cx, 1, " ")
+    elseif n == 2 then
+      self.gpu.fill(1, self.cy, self.w, 1, " ")
+    end
   end
 
   -- adjust terminal attributes
   function commands:m(args)
+    args[1] = args[1] or 0
+    for i=1, #args, 1 do
+      local n = args[i]
+      if n == 0 then
+        self.fg = colors[8]
+        self.bg = colors[1]
+        self.attributes.echo = true
+      elseif n == 8 then
+        self.attributes.echo = false
+      elseif n == 28 then
+        self.attributes.echo = true
+      elseif n > 29 and n < 38 then
+        self.fg = colors[n - 29]
+      elseif n > 39 and n < 48 then
+        self.bg = colors[n - 39]
+      end
+    end
   end
 
 
@@ -134,13 +188,19 @@ do
   function control:c(args)
     args[1] = args[1] or 0
     for i=1, #args, 1 do
-      local arg = args[i]
-      if arg == 0 then -- (re)set configuration to sane defaults
+      local n = args[i]
+      if n == 0 then -- (re)set configuration to sane defaults
         -- echo text that the user has entered
         self.attributes.echo = true
         -- buffer input by line
         self.attributes.line = true
         -- send raw key input data according to the VT100 spec
+        self.attributes.raw = false
+      -- these numbers aren't random - they're the ASCII codes of the most
+      -- reasonable corresponding characters
+      elseif n == 82 then
+        self.attributes.raw = true
+      elseif n == 114 then
         self.attributes.raw = false
       end
     end
@@ -191,9 +251,10 @@ do
           self.esc = ""
           local ln
           str, ln = pop(str, next_esc)
-          write(self)
+          write(self, ln)
         else
           write(self, str)
+          str = ""
         end
       end
     end
@@ -260,13 +321,14 @@ do
       in_esc = false,
       gpu = proxy,
       esc = "",
-      cx = 0,
-      cy = 0,
+      cx = 1,
+      cy = 1,
       fg = 0xFFFFFF,
       bg = 0,
     }, {__index = _stream})
     new.w, new.h = proxy.maxResolution()
     proxy.setResolution(new.w, new.h)
+    proxy.fill(1, 1, new.w, new.h, " ")
     for _, keyboard in pairs(component.invoke(screen, "getKeyboards")) do
       new.keyboards[keyboard] = true
     end
@@ -275,4 +337,50 @@ do
 end
 
 
+-- early boot logger
 
+do
+  local levels = {
+    debug = 0,
+    info = 1,
+    warn = 64,
+    error = 128,
+    panic = 256,
+  }
+  k.loglevels = levels
+
+  local lgpu = component.list("gpu", true)()
+  local lscr = component.list("screen", true)()
+
+  local function safe_concat(...)
+    local args = table.pack(...)
+    local msg = ""
+    for i=1, args.n, 1 do
+      msg = string.format("%s%s ", msg, tostring(args[i]))
+    end
+    return msg
+  end
+
+  if lgpu and lscr then
+    k.logio = k.create_tty(lgpu, lscr)
+    function k.log(level, ...)
+      local msg = safe_concat(...)
+      if (tonumber(k.cmdline.loglevel) or 1) <= level then
+        k.logio:write(string.format("[%4.4f] %s\n", k.uptime(), msg))
+      end
+      return true
+    end
+  else
+    k.logio = nil
+    function k.log()
+    end
+  end
+end
+
+k.log(k.loglevels.info, "Starting", _OSVERSION)
+
+
+-- temporary main loop
+while true do
+  computer.pullSignal()
+end
