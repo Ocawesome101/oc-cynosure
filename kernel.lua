@@ -380,6 +380,72 @@ end
 k.log(k.loglevels.info, "Starting", _OSVERSION)
 
 
+-- kernel hooks
+
+k.log(k.loglevels.info, "base/hooks")
+
+do
+  k.hooks = {}
+  local hooks = {}
+  function k.hooks.add(name, func)
+    checkArg(1, name, "string")
+    checkArg(2, func, "function")
+    hooks[name] = hooks[name] or {}
+    table.insert(hooks[name], func)
+  end
+
+  function k.hooks.call(name, ...)
+    if hooks[name] then
+      for k, v in ipairs(hooks[name]) do
+        v(...)
+      end
+    end
+  end
+end
+
+
+-- some shutdown related stuff
+
+k.log(k.loglevels.info, "base/shutdown")
+
+do
+  local shutdown = computer.shutdown
+  function k.shutdown(rbt)
+    k.hooks.call("shutdown", rbt)
+    shutdown(rbt)
+  end
+end
+
+
+-- some component API conveniences
+
+k.log(k.loglevels.info, "base/component")
+
+do
+  function component.get(addr, mkpx)
+    checkArg(1, addr, "string")
+    checkArg(2, mkpx, "boolean", "nil")
+    local pat = string.format("^%s", addr:gsub("%-", "%%-"))
+    for k, v in component.list() do
+      if k:match(pat) then
+        return mkpx and component.proxy(k) or k
+      end
+    end
+    return nil, "no such component"
+  end
+
+  setmetatable(component, {
+    __index = function(t, k)
+      local addr = component.list(k)()
+      if not addr then
+        error(string.format("no component of type '%s'", k))
+      end
+      return component.proxy(addr)
+    end
+  })
+end
+
+
 -- temporary main loop
 while true do
   computer.pullSignal()
