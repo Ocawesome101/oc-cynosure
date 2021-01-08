@@ -446,6 +446,125 @@ do
 end
 
 
+-- fsapi: VFS and misc filesystem infrastructure
+
+k.log(k.loglevels.info, "base/fsapi")
+
+do
+end
+
+
+-- custom types
+
+k.log(k.loglevels.info, "base/types")
+
+do
+  local old_type = type
+  function _G.type(obj)
+    if type(obj) == "table" then
+      local mt = getmetatable(obj) or {}
+      return mt.__name or mt.__type or old_type(obj)
+    else
+      return old_type(obj)
+    end
+  end
+
+  -- copied from machine.lua
+  function _G.checkArg(n, have, ...)
+    have = type(have)
+    local function check(want, ...)
+      if not want then
+        return false
+      else
+        return have == want or check(...)
+      end
+    end
+    if not check(...) then
+      local msg = string.format("bad argument #%d (%s expected, got %s)",
+                                n, table.concat(table.pack(...), " or "), have)
+      error(msg, 2)
+    end
+  end
+end
+
+
+-- thread: wrapper around coroutines
+
+k.log(k.loglevels.info, "base/thread")
+
+do
+  local old_coroutine = coroutine
+  local _coroutine = {}
+  _G.coroutine = _coroutine
+  function _coroutine.create(func)
+    checkArg(1, func, "function")
+    return setmetatable({
+      __thread = old_coroutine.create(func)
+    },
+    {
+      __index = _coroutine,
+      __name = "thread"
+    })
+  end
+
+  function _coroutine.wrap(fnth)
+    checkArg(1, fnth, "function", "thread")
+    if type(fnth) == "function" then fnth = _coroutine.create(fnth) end
+    return function(...)
+      return select(2, fnth:resume(...))
+    end
+  end
+
+  function _coroutine:resume(...)
+    return old_coroutine.resume(self.__thread, ...)
+  end
+
+  -- build iterable table
+  local iter = {}
+  for k, v in pairs(old_coroutine) do
+    iter[k] = v
+  end
+  for k, v in pairs(_coroutine) do
+    iter[k] = v
+  end
+
+  setmetatable(_coroutine, {
+    __index = function(t, k)
+      if k.scheduler then
+        local process = k.scheduler.current()
+        if process.coroutine_handler[k] then
+          return process.coroutine_handler[k]
+        end
+      end
+      return old_coroutine[k]
+    end,
+    __pairs = function()
+      return pairs(iter)
+    end
+  })
+end
+
+
+-- processes
+
+k.log(k.loglevels.info, "base/process")
+
+do
+  function k.create_process()
+  end
+end
+
+
+-- scheduler
+
+k.log(k.loglevels.info, "base/scheduler")
+
+do
+end
+
+
+
+
 -- temporary main loop
 while true do
   computer.pullSignal()
