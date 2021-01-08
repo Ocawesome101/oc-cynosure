@@ -20,6 +20,7 @@ end
 --#include "base/thread.lua"
 --#include "base/process.lua"
 --#include "base/scheduler.lua"
+--#include "includes.lua"
 --#include "base/load_init.lua"
 
 -- temporary main loop
