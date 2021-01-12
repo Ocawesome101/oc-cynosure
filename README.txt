@@ -18,6 +18,27 @@ Main goals:
 
 Core Features
 =============
+  - Every resource is represented to userspace as a file
+    o Process creation is still done via specific API due to various
+          intricacies of the Lua language.  Could be done through sending
+          bytecode or raw source code over a pipe, but that would be unnecessary
+          complexity;
+    o The following basic file structure is followed:
+      > Root filesystem mounted at "/", as per standard;
+      > devfs and procfs mounted under "/sys/{dev,proc}" for memory reasons -
+          it's lighter on memory to create one RAM-based filesystem rather than
+          2 of them;
+      > Process information may be read from "/sys/proc/{pid}"
+      > Devices are accessible through "/sys/dev/{device_id}{number}"
+        - Device names:
+          o `hdN`: refers to internal filesystem nodes
+          o `fdN`: refers to external filesystem nodes, i.e. floppy disks
+          o `ttyN`: refers to a teletype device, usually a stream to a local
+                        VT100 terminal (i.e., one running on the local machine)
+      > Filesystem mounts in "/sys/mounts"
+        - </sys/mounts>:
+            /sys/dev/hd0: /
+            /sys/dev/fd0: /mnt/openos
   - Full-featured and fast VT100 emulation
   - Hook system
   - User system
