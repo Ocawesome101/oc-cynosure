@@ -43,5 +43,8 @@ Core Features
   - Hook system
   - User system
   - Process-based scheduling
+    o Signals are managed per-process through a queue
+      > Easier inter-thread communication
+      > Achieved through wrapping computer.{push,pull}Signal
   - Advanced piping support
     - Hopefully thread-safe

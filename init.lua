@@ -13,6 +13,7 @@ end
 --#include "base/tty.lua"
 --#include "base/logger.lua"
 --#include "base/hooks.lua"
+--#include "base/util.lua"
 --#include "base/shutdown.lua"
 --#include "base/component.lua"
 --#include "base/fsapi.lua"

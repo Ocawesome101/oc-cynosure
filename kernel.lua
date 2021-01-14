@@ -404,6 +404,46 @@ do
 end
 
 
+-- some utilities --
+
+k.log(k.loglevels.info, "base/util")
+
+do
+  local util = {}
+  function util.merge_tables()
+  end
+
+  -- here we override rawset() in order to properly protect tables
+  local _rawset = rawset
+  local blacklist = setmetatable({}, {__mode = "k"})
+  function _G.rawset(t, k, v)
+    if not blacklist[t] then
+      return _rawset(t, k, v)
+    else
+      -- this will error
+      t[k] = v
+    end
+  end
+
+  local function protecc()
+    error("attempt to modify a write-protected table")
+  end
+
+  function util.protect(tbl)
+    local new = {}
+    local mt = {
+      __index = tbl,
+      __newindex = protecc,
+      __pairs = tbl,
+      __metatable = {}
+    }
+    return setmetatable(new, mt)
+  end
+
+  k.util = util
+end
+
+
 -- some shutdown related stuff
 
 k.log(k.loglevels.info, "base/shutdown")
@@ -599,50 +639,63 @@ do
     return old_coroutine.resume(self.__thread, ...)
   end
 
-  -- build iterable table
-  local iter = {}
-  for k, v in pairs(old_coroutine) do
-    iter[k] = v
-  end
-  for k, v in pairs(_coroutine) do
-    iter[k] = v
-  end
-
   setmetatable(_coroutine, {
     __index = function(t, k)
       if k.scheduler then
         local process = k.scheduler.current()
-        if process.coroutine_handler[k] then
-          return process.coroutine_handler[k]
+        if process.coroutine[k] then
+          return process.coroutine[k]
         end
       end
       return old_coroutine[k]
     end,
     __pairs = function()
+      -- build iterable table
+      local iter = k.util.merge_tables(old_coroutine,
+                      _coroutine,
+                      (k.scheduler and k.scheduler.current() or {}))
       return pairs(iter)
-    end
+    end,
+    __metatable = {}
   })
 end
 
 
 -- processes
+-- mostly glorified coroutine sets
 
 k.log(k.loglevels.info, "base/process")
 
 do
   local process = {}
-  
+  local proc_mt = {
+    __index = process,
+    __name = "process"
+  }
+
+  function process:resume(...)
+  end
+
+  function process:status()
+  end
+
+  function process:signal()
+  end
+
   local pid = 0
   function k.create_process(args)
     pid = pid + 1
-    return setmetatable({
+    local new = setmetatable({
       name = args.name,
       pid = pid,
-      threads = {}
-    }, {
-      __index = process,
-      __name = "process",
-    })
+      threads = {},
+      handlers = {},
+      coroutine = {} -- overrides for some coroutine methods
+    }, proc_mt)
+    for k, v in pairs(args) do
+      new[k] = v
+    end
+    return new
   end
 end
 
@@ -652,11 +705,16 @@ end
 k.log(k.loglevels.info, "base/scheduler")
 
 do
+  local processes = {}
+  local x
 end
 
 
 
 
+-- load init, i guess
+
+k.log(k.loglevels.info, "base/load_init")
 
 
 -- temporary main loop

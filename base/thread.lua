@@ -29,27 +29,23 @@ do
     return old_coroutine.resume(self.__thread, ...)
   end
 
-  -- build iterable table
-  local iter = {}
-  for k, v in pairs(old_coroutine) do
-    iter[k] = v
-  end
-  for k, v in pairs(_coroutine) do
-    iter[k] = v
-  end
-
   setmetatable(_coroutine, {
     __index = function(t, k)
       if k.scheduler then
         local process = k.scheduler.current()
-        if process.coroutine_handler[k] then
-          return process.coroutine_handler[k]
+        if process.coroutine[k] then
+          return process.coroutine[k]
         end
       end
       return old_coroutine[k]
     end,
     __pairs = function()
+      -- build iterable table
+      local iter = k.util.merge_tables(old_coroutine,
+                      _coroutine,
+                      (k.scheduler and k.scheduler.current() or {}))
       return pairs(iter)
-    end
+    end,
+    __metatable = {}
   })
 end
