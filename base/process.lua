@@ -20,6 +20,10 @@ do
         end
       end
     end
+    if not next(self.threads) then
+      self.dead = true
+    end
+    return true
   end
 
   function process:status()
@@ -28,10 +32,13 @@ do
   function process:push_signal(...)
     local signal = table.pack(...)
     table.insert(self.queue, signal)
+    -- this is how we tell computer.pullSignal that we've pushed a signal
+    -- not the best way of doing it but It Works(TM)
+    c_pushSignal("signal_pushed", self.pid)
   end
 
   -- we wrap computer.pullSignal later to use this
-  -- there's no timeouts, computer.pullSignal still manages that
+  -- there are no timeouts, computer.pullSignal still manages that
   function process:pull_signal()
     if #self.queue > 0 then
       return table.remove(self.queue, 1)
@@ -49,6 +56,7 @@ do
       stopped = false,
       handlers = {},
       coroutine = {} -- overrides for some coroutine methods
+                     -- potentially used in pipes
     }, proc_mt)
     for k, v in pairs(args) do
       new[k] = v
