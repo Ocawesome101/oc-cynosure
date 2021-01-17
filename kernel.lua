@@ -440,8 +440,61 @@ do
     return setmetatable(new, mt)
   end
 
+  -- create memory-friendly copies of tables
+  -- uses metatable weirdness
+  -- this is a bit like util.protect
+  function util.copy(tbl)
+    if type(tbl) ~= "table" then return tbl end
+    local shadow = {}
+    local copy_mt = {
+      __index = function(_, k)
+        local item = shadow[k] or tbl[k]
+        return util.copy(item)
+      end,
+      __pairs = function()
+        local iter = {}
+        for k, v in pairs(tbl) do
+          iter[k] = util.copy(v)
+        end
+        for k, v in pairs(shadow) do
+          iter[k] = v
+        end
+        return pairs(iter)
+      end
+      -- no __metatable: leaving this metatable exposed isn't a huge
+      -- deal, since there's no way to access `tbl` for writing using any
+      -- of the functions in it.
+    }
+    copy_mt.__ipairs = copy_mt.__pairs
+    return setmetatable(shadow, copy_mt)
+  end
+
   k.util = util
 end
+
+
+-- some security-related things --
+
+k.log(k.loglevels.info, "base/security")
+
+k.security = {}
+
+
+-- users --
+
+k.log(k.loglevels.info, "base/security/users")
+
+do
+end
+
+
+-- access control lists, mostly --
+
+k.log(k.loglevels.info, "base/security/access_control")
+
+do
+end
+
 
 
 -- some shutdown related stuff
@@ -683,6 +736,10 @@ do
         end
       end
     end
+    if not next(self.threads) then
+      self.dead = true
+    end
+    return true
   end
 
   function process:status()
@@ -691,10 +748,13 @@ do
   function process:push_signal(...)
     local signal = table.pack(...)
     table.insert(self.queue, signal)
+    -- this is how we tell computer.pullSignal that we've pushed a signal
+    -- not the best way of doing it but It Works(TM)
+    c_pushSignal("signal_pushed", self.pid)
   end
 
   -- we wrap computer.pullSignal later to use this
-  -- there's no timeouts, computer.pullSignal still manages that
+  -- there are no timeouts, computer.pullSignal still manages that
   function process:pull_signal()
     if #self.queue > 0 then
       return table.remove(self.queue, 1)
@@ -712,6 +772,7 @@ do
       stopped = false,
       handlers = {},
       coroutine = {} -- overrides for some coroutine methods
+                     -- potentially used in pipes
     }, proc_mt)
     for k, v in pairs(args) do
       new[k] = v
@@ -741,6 +802,26 @@ do
   local x
 end
 
+
+
+-- "live patch" support so theoretically the kernel can be upgraded in-place --
+-- there are certain components that may not work
+
+k.log(k.loglevels.info, "extra/live_patch.lua")
+
+do
+  local kernel_env = k.create_env()
+  kernel_env.component = component
+  kernel_env.computer = computer
+  local function livepatch(code)
+    if k.security.get_permission("KERNEL_ACCESS") then
+      local ok, err = load(code, "=livepatch-code", "bt", kernel_env)
+      -- we run the kernel code inside the sandbox, then merge most changes
+    else
+      return nil, "permission denied"
+    end
+  end
+end
 
 
 

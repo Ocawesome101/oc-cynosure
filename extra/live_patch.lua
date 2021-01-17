@@ -4,10 +4,10 @@
 k.log(k.loglevels.info, "extra/live_patch.lua")
 
 do
-  local kernel_env = k.create_env()
+  local kernel_env = k.copy_table(_G)
   kernel_env.component = component
   kernel_env.computer = computer
-  local function livepatch(code)
+  function k.livepatch(code)
     if k.security.get_permission("KERNEL_ACCESS") then
       local ok, err = load(code, "=livepatch-code", "bt", kernel_env)
       -- we run the kernel code inside the sandbox, then merge most changes
