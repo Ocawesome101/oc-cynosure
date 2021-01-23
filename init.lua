@@ -18,6 +18,7 @@ end
 --#include "base/shutdown.lua"
 --#include "base/component.lua"
 --#include "base/fsapi.lua"
+--#include "base/stdlib.lua"
 --#include "base/types.lua"
 --#include "base/thread.lua"
 --#include "base/process.lua"

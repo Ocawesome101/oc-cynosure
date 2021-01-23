@@ -80,18 +80,30 @@ do
     end
   end
 
-  local function write(self, str)
-    for line in str:gmatch("([^\n]+)") do
-      local rline = line
-      while #rline > 0 do
-        local to_write
-        rline, to_write = pop(rline, self.w - self.cx + 1)
-        self.gpu.set(self.cx, self.cy, to_write)
-        self.cx = self.cx + #to_write
-        wrap_cursor(self)
-      end
-      self.cx, self.cy = 1, self.cy + 1
+  local function writeline(self, rline)
+    while #rline > 0 do
+      local to_write
+      rline, to_write = pop(rline, self.w - self.cx + 1)
+      self.gpu.set(self.cx, self.cy, to_write)
+      self.cx = self.cx + #to_write
       wrap_cursor(self)
+    end
+  end
+
+  local function write(self, lines)
+    while #lines > 0 do
+      local next_nl = lines:find("\n")
+      if next_nl then
+        local ln
+        lines, ln = pop(lines, next_nl - 1)
+        lines = lines:sub(2) -- take off the newline
+        writeline(self, ln)
+        self.cx, self.cy = 1, self.cy + 1
+        wrap_cursor(self)
+      else
+        writeline(self, lines)
+        lines = ""
+      end
     end
   end
 
@@ -103,25 +115,25 @@ do
 
   -- move cursor up N[=1] lines
   function commands:A(args)
-    local n = args[1] or 1
+    local n = math.max(args[1] or 0, 1)
     self.cy = self.cy - n
   end
 
   -- move cursor down N[=1] lines
   function commands:B(args)
-    local n = args[1] or 1
+    local n = math.max(args[1] or 0, 1)
     self.cy = self.cy + n
   end
 
   -- move cursor right N[=1] lines
   function commands:C(args)
-    local n = args[1] or 1
+    local n = math.max(args[1] or 0, 1)
     self.cx = self.cx + n
   end
 
   -- move cursor left N[=1] lines
   function commands:D(args)
-    local n = args[1] or 1
+    local n = math.max(args[1] or 0, 1)
     self.cx = self.cx - n
   end
 
@@ -177,8 +189,10 @@ do
         self.attributes.echo = true
       elseif n > 29 and n < 38 then
         self.fg = colors[n - 29]
+        self.gpu.setForeground(self.fg)
       elseif n > 39 and n < 48 then
         self.bg = colors[n - 39]
+        self.gpu.setBackground(self.bg)
       end
     end
   end
@@ -225,16 +239,16 @@ do
         local esc_end = str:find("[a-zA-Z]")
         if not esc_end then
           self.esc = string.format("%s%s", self.esc, str)
-          break
         else
           self.in_esc = false
           local finish
           str, finish = pop(str, esc_end)
-          local esc = string.format("%s%s", self.esc, str)
+          local esc = string.format("%s%s", self.esc, finish)
           self.esc = ""
-          local raw_args, separator, code = esc:match("\27(^%d)([%d;]+)([a-zA-Z])")
+          local separator, raw_args, code = esc:match("\27([%[%(])([%d;]*)([a-zA-Z])")
+          raw_args = raw_args or "0"
           local args = {}
-          for arg in raw_args:match("([^;]+)") do
+          for arg in raw_args:gmatch("([^;]+)") do
             args[#args + 1] = tonumber(arg) or 0
           end
           if separator == separators.standard and commands[code] then
@@ -250,7 +264,7 @@ do
           self.in_esc = true
           self.esc = ""
           local ln
-          str, ln = pop(str, next_esc)
+          str, ln = pop(str, next_esc - 1)
           write(self, ln)
         else
           write(self, str)
@@ -377,7 +391,7 @@ do
   end
 end
 
-k.log(k.loglevels.info, "Starting", _OSVERSION)
+k.log(k.loglevels.info, "Starting\27[33m", _OSVERSION, "\27[37m")
 
 
 -- kernel hooks
@@ -802,26 +816,6 @@ do
   local x
 end
 
-
-
--- "live patch" support so theoretically the kernel can be upgraded in-place --
--- there are certain components that may not work
-
-k.log(k.loglevels.info, "extra/live_patch.lua")
-
-do
-  local kernel_env = k.create_env()
-  kernel_env.component = component
-  kernel_env.computer = computer
-  local function livepatch(code)
-    if k.security.get_permission("KERNEL_ACCESS") then
-      local ok, err = load(code, "=livepatch-code", "bt", kernel_env)
-      -- we run the kernel code inside the sandbox, then merge most changes
-    else
-      return nil, "permission denied"
-    end
-  end
-end
 
 
 

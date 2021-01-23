@@ -38,4 +38,4 @@ do
   end
 end
 
-k.log(k.loglevels.info, "Starting", _OSVERSION)
+k.log(k.loglevels.info, "Starting\27[33m", _OSVERSION, "\27[37m")
