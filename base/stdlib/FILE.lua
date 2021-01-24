@@ -9,6 +9,9 @@ do
     __name = "FILE*"
   }
   function k.create_fstream(base)
-    return setmetatable({}, fmt)
+    local new = {
+      stream = base
+    }
+    return setmetatable(new, fmt)
   end
 end
