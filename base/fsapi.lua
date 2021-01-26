@@ -10,7 +10,17 @@ do
     file_not_found = "no such file or directory",
     is_a_directory = "is a directory",
     not_a_directory = "not a directory",
-    read_only = "target is read-only"
+    read_only = "target is read-only",
+    failed_read = "failed opening file for reading",
+    failed_write = "failed opening file for writing",
+    file_exists = "file already exists"
+  }
+
+  -- standard file types
+  fs.types = {
+    file = 1,
+    directory = 2,
+    link = 3
   }
 
   -- This VFS should support directory overlays, fs mounting, and directory
@@ -22,9 +32,10 @@ do
     local segments = {}
     for seg in path:gmatch("[^/]+") do
     end
+    return segments
   end
 
-  local function resolve()
+  local function resolve(path)
   end
 
   local registered = {partition_tables = {}, filesystems = {}}
@@ -44,14 +55,30 @@ do
     }
   end
 
-  function _managed:touch(file)
+  function _managed:touch(file, ftype)
     checkArg(1, file, "string")
-    local fd = self.node.open(file, "w")
-    if not fd then
+    checkArg(2, ftype, "number", "nil")
+    if self.node.isReadOnly() then
       return nil, fs.errors.read_only
     end
-    self.node.write(fd, "")
-    self.node.close(fd)
+    if self.node.exists(file) then
+      return nil, fs.errors.file_exists
+    end
+    if ftype == fs.types.file or not ftype then
+      local fd = self.node.open(file, "w")
+      if not fd then
+        return nil, fs.errors.failed_write
+      end
+      self.node.write(fd, "")
+      self.node.close(fd)
+    elseif ftype == fs.types.directory then
+      local ok, err = self.node.makeDirectory(file)
+      if not ok then
+        return nil, err or "unknown error"
+      end
+    elseif ftype == fs.types.link then
+      return nil, "unsupported operation"
+    end
     return true
   end
   
@@ -73,7 +100,7 @@ do
     elseif not self.node.isDirectory(path) then
       return nil, fs.errors.not_a_directory
     end
-    local files = self.node.list(path)
+    local files = self.node.list(path) or {}
     return files
   end
   
@@ -164,6 +191,12 @@ do
     else
       return create_node_from_unmanaged(filesystem)
     end
+  end
+
+  -- actual filesystem API now
+  fs.api = {}
+  function fs.api.open(file, mode)
+    local node, err = resolve(file)
   end
 
   k.fs = fs
