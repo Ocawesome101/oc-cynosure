@@ -25,17 +25,59 @@ do
 
   -- This VFS should support directory overlays, fs mounting, and directory
   --    mounting, hopefully all seamlessly.
-  -- mounts["/"] = { node = ..., children = {["/bin"] = "/usr/bin", ...}}
+  -- mounts["/"] = { node = ..., children = {["bin"] = "usr/bin", ...}}
   local mounts = {}
 
   local function split(path)
     local segments = {}
     for seg in path:gmatch("[^/]+") do
+      if seg == ".." then
+        segments[#segments] = nil
+      elseif seg ~= "." then
+        segments[#segments + 1] = seg
+      end
     end
     return segments
   end
 
-  local function resolve(path)
+  local faux = {children = mounts}
+  local resolving = {}
+  local resolve = function(path)
+    if resolving[path] then
+      return nil, "recursive mount detected"
+    end
+    resolving[path] = true
+    local current, parent = faux
+    if not current.children["/"] then
+      return nil, "root filesystem is not mounted!"
+    end
+    if current.children[path] then
+      return current.children[path]
+    end
+    local segments = split(path)
+    local base_n = 1 -- we may have to traverse multiple mounts
+    for i=1, #segments, 1 do
+      local try = table.concat(segments, base_n, i)
+      if current.children[try] then
+        base_n = i -- we are now at this stage of the path
+        local next_node = current.children[try]
+        if type(next_node) == "string" then
+          local err
+          next_node, err = resolve(next_node)
+          if not next_node then
+            resolving[path] = false
+            return nil, err
+          end
+        end
+        parent = current
+        current = next_node
+      else
+        resolving[path] = false
+        return nil, fs.errors.file_not_found
+      end
+    end
+    resolving[path] = false
+    return current, parent
   end
 
   local registered = {partition_tables = {}, filesystems = {}}
