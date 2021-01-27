@@ -1,0 +1,52 @@
+// FILE SYSTEMS UNDER CYNOSURE
+
+Cynosure implements a very simple filesystem driver interface.
+
+// registering
+
+In order to be recognized, filesystem and partition table drivers must call `fs.register()` with the appropriate category (`fs.PARTITION_TABLE` or `fs.FILESYSTEM`), and the driver itself (a table).
+
+Filesystem drivers must expose:
+  - `is_valid_superblock(superblock:string): boolean`
+  - `new(drive:<drive component proxy>): <filesystem object>`
+
+Partition table drivers must expose:
+  - `has_valid_superblock(superblock:string): boolean`
+  - `create(drive:<drive component proxy>): <ptable object>`
+
+Partition table objects MUST expose the following methods.  All methods must return `nil` and an error message on failure, and `true` on success, unless otherwise specified.
+  - `pt:list(): table`
+    o Returns a list of partitions where `list[n] = { start_sector = number, end_sector = number }`.
+  - `pt:partition(index:number): <drive component proxy>`
+    o Should return an emulated `drive` component, limited to the constraints of the specified partition index.
+
+Filesystem objects MUST have the following methods.  All methods must return `nil` and an error message on failure, and `true` on success unless otherwise specified here.
+  - `fs:stat(file:string): table`
+    o Returned tables must be in the format `{ permissions = number,
+        isDirectory = boolean,
+        owner       = number,
+        group       = number,
+        lastModified= number (UNIX timestamp),
+        size        = number }`
+  - `fs:touch(file:string, ftype:number)`
+    o Creates the mentioned file, if possible.
+    o The following `ftypes` are defined as per the Cynosure standard (drivers may convert these to their own internally):
+      > 1: File (string of bytes)
+      > 2: Directory (list of files)
+      > 3: Link (pointer to another file, must be supported by the filesystem)
+  - `fs:remove(file:string)`
+    o Remove the mentioned file.  If it is a directory, then the filesystem should remove it only if it has no children.
+  - `fs:list(path:string): table`
+    o Returns a table of files associated with the specified directory.  `.` and `..` should not be included.  An empty table should be returned if there are no files in the directory.
+  - `fs:open(file:string[, mode:string]): <file handle>`
+    o Returns a handle to the specified file according to the provided `mode`.  `mode` should default to `r` if unspecified.  Valid `mode`s are `r`, `w`, and `a`.
+
+File handles must define the following methods.  Returned values should comply with the requirements defined for filesystem driver methods.  Methods should return an error if their associated handle was not opened in the proper mode to support the operation.
+  - `handle:read(n:number): string`
+    o Reads a string of bytes of length `n` from the file.  If there are fewer than `n` bytes left in the file, returns all bytes left in the file.  Does not work in `w` or `a` mode.
+  - `handle:seek(whence:string[, offset:number]): number`
+    o Seeks to a new position in the file.  See PUC-Rio Lua's `file:seek` for more information on exact behavior.  Does not work in `w` or `a` mode.
+  - `handle:write(data:string)`
+    o Writes the provided data to the end of the file.
+  - `handle:close()`
+    o Closes the handle, flushes internal buffers to disk, and sets the handle's `closed` status to `true`.

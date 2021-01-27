@@ -129,7 +129,7 @@ do
     if not self.node.exists(file) then
       return nil, fs.errors.file_not_found
     end
-    if self.node.isDirectory(file) then
+    if self.node.isDirectory(file) and #(self.node.list(file) or {}) > 0 then
       return nil, fs.errors.is_a_directory
     end
     return self.node.remove(file)
@@ -238,7 +238,17 @@ do
   -- actual filesystem API now
   fs.api = {}
   function fs.api.open(file, mode)
+    checkArg(1, file, "string")
+    checkArg(2, mode, "string", "nil")
     local node, err = resolve(file)
+    if not node then
+      return nil, err
+    end
+    mode = mode or "r"
+    return node:open(file, mode)
+  end
+
+  function fs.api.stat()
   end
 
   k.fs = fs
