@@ -57,7 +57,7 @@ do
     local segments = split(path)
     local base_n = 1 -- we may have to traverse multiple mounts
     for i=1, #segments, 1 do
-      local try = table.concat(segments, base_n, i)
+      local try = table.concat(segments, "/", base_n, i)
       if current.children[try] then
         base_n = i -- we are now at this stage of the path
         local next_node = current.children[try]
@@ -77,7 +77,11 @@ do
       end
     end
     resolving[path] = false
-    return current, parent
+    local ret = "/"..table.concat(segments, "/", base_n, #segments)
+    if must_exist and not current.node:exists(ret) then
+      return nil, fs.errors.file_not_found
+    end
+    return current, parent, ret
   end
 
   local registered = {partition_tables = {}, filesystems = {}}
@@ -240,15 +244,44 @@ do
   function fs.api.open(file, mode)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
-    local node, err = resolve(file)
+    local node, err, path = resolve(file)
     if not node then
       return nil, err
     end
     mode = mode or "r"
-    return node:open(file, mode)
+    return node.node:open(path, mode)
   end
 
-  function fs.api.stat()
+  function fs.api.stat(file)
+    checkArg(1, file, "string")
+    local node, err, path = resolve(file)
+    if not node then
+      return false
+    end
+    return node.node:stat(file)
+  end
+
+  function fs.api.touch(file, ftype)
+    checkArg(1, file, "string")
+    checkArg(2, ftype, "number", "nil")
+    ftype = ftype or fs.types.file
+    local root, base = file:match("^(/?.+)/([^/]+)/?$")
+    root = root or "/"
+    base = base or file
+    local node, err, path = resolve(root)
+    if not node then
+      return nil, err
+    end
+    return node.node:touch(path .. "/" .. base, ftype)
+  end
+
+  function fs.api.remove(file)
+    checkArg(1, file, "string")
+    local node, err, pack = resolve(root)
+    if not node then
+      return nil, err
+    end
+    return node.node:remove(file)
   end
 
   k.fs = fs
