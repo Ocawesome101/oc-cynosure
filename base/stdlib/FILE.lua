@@ -86,7 +86,7 @@ do
   end
 
   function buffer:read(...)
-    if self.closed then
+    if self.closed or not self.mode.r then
       return nil, "bad file descriptor"
     end
     local args = table.pack(...)
@@ -95,6 +95,13 @@ do
       read[i] = buffer:read_formatted(args[i])
     end
     return table.unpack(read)
+  end
+
+  function buffer:lines(format)
+    format = format or "l"
+    return function()
+      return self:read(format)
+    end
   end
 
   function buffer:write(...)
@@ -145,15 +152,19 @@ do
     __index = buffer,
     __name = "FILE*"
   }
-  function k.create_fstream(base)
+  function k.create_fstream(base, mode)
     local new = {
       stream = base,
       buffer_size = 512,
       read_buffer = "",
       write_buffer = "",
       buffer_mode = "standard", -- standard, line, none
-      closed = false
+      closed = false,
+      mode = {}
     }
+    for c in mode:gmatch(".") do
+      new.mode[c] = true
+    end
     return setmetatable(new, fmt)
   end
 end
