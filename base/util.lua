@@ -4,7 +4,13 @@ k.log(k.loglevels.info, "base/util")
 
 do
   local util = {}
-  function util.merge_tables()
+  function util.merge_tables(a, b)
+    for k, v in pairs(b) do
+      if not a[k] then
+        a[k] = v
+      end
+    end
+    return a
   end
 
   -- here we override rawset() in order to properly protect tables
