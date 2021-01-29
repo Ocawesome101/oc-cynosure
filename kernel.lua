@@ -424,7 +424,13 @@ k.log(k.loglevels.info, "base/util")
 
 do
   local util = {}
-  function util.merge_tables()
+  function util.merge_tables(a, b)
+    for k, v in pairs(b) do
+      if not a[k] then
+        a[k] = v
+      end
+    end
+    return a
   end
 
   -- here we override rawset() in order to properly protect tables
@@ -560,32 +566,189 @@ k.log(k.loglevels.info, "base/fsapi")
 do
   local fs = {}
 
+  -- common error codes
+  fs.errors = {
+    file_not_found = "no such file or directory",
+    is_a_directory = "is a directory",
+    not_a_directory = "not a directory",
+    read_only = "target is read-only",
+    failed_read = "failed opening file for reading",
+    failed_write = "failed opening file for writing",
+    file_exists = "file already exists"
+  }
+
+  -- standard file types
+  fs.types = {
+    file = 1,
+    directory = 2,
+    link = 3
+  }
+
   -- This VFS should support directory overlays, fs mounting, and directory
   --    mounting, hopefully all seamlessly.
-  -- mounts["/"] = { node = ..., children = {["/bin"] = "/usr/bin", ...}}
+  -- mounts["/"] = { node = ..., children = {["bin"] = "usr/bin", ...}}
   local mounts = {}
 
   local function split(path)
     local segments = {}
     for seg in path:gmatch("[^/]+") do
+      if seg == ".." then
+        segments[#segments] = nil
+      elseif seg ~= "." then
+        segments[#segments + 1] = seg
+      end
     end
+    return segments
   end
 
-  local function resolve()
+  local faux = {children = mounts}
+  local resolving = {}
+  local resolve = function(path)
+    if resolving[path] then
+      return nil, "recursive mount detected"
+    end
+    resolving[path] = true
+    local current, parent = faux
+    if not current.children["/"] then
+      return nil, "root filesystem is not mounted!"
+    end
+    if current.children[path] then
+      return current.children[path]
+    end
+    local segments = split(path)
+    local base_n = 1 -- we may have to traverse multiple mounts
+    for i=1, #segments, 1 do
+      local try = table.concat(segments, "/", base_n, i)
+      if current.children[try] then
+        base_n = i -- we are now at this stage of the path
+        local next_node = current.children[try]
+        if type(next_node) == "string" then
+          local err
+          next_node, err = resolve(next_node)
+          if not next_node then
+            resolving[path] = false
+            return nil, err
+          end
+        end
+        parent = current
+        current = next_node
+      else
+        resolving[path] = false
+        return nil, fs.errors.file_not_found
+      end
+    end
+    resolving[path] = false
+    local ret = "/"..table.concat(segments, "/", base_n, #segments)
+    if must_exist and not current.node:exists(ret) then
+      return nil, fs.errors.file_not_found
+    end
+    return current, parent, ret
   end
 
   local registered = {partition_tables = {}, filesystems = {}}
 
   local _managed = {}
-  function _managed:stat()
+  function _managed:stat(file)
+    if not self.node.exists(file) then
+      return nil, fs.errors.file_not_found
+    end
+    return {
+      permissions = self:info().read_only and 365 or 511,
+      isDirectory = self.node.isDirectory(file),
+      owner       = -1,
+      group       = -1,
+      lastModified= self.node.lastModified(file),
+      size        = self.node.size(file)
+    }
   end
-  function _managed:touch()
+
+  function _managed:touch(file, ftype)
+    checkArg(1, file, "string")
+    checkArg(2, ftype, "number", "nil")
+    if self.node.isReadOnly() then
+      return nil, fs.errors.read_only
+    end
+    if self.node.exists(file) then
+      return nil, fs.errors.file_exists
+    end
+    if ftype == fs.types.file or not ftype then
+      local fd = self.node.open(file, "w")
+      if not fd then
+        return nil, fs.errors.failed_write
+      end
+      self.node.write(fd, "")
+      self.node.close(fd)
+    elseif ftype == fs.types.directory then
+      local ok, err = self.node.makeDirectory(file)
+      if not ok then
+        return nil, err or "unknown error"
+      end
+    elseif ftype == fs.types.link then
+      return nil, "unsupported operation"
+    end
+    return true
   end
-  function _managed:remove()
+  
+  function _managed:remove(file)
+    checkArg(1, file, "string")
+    if not self.node.exists(file) then
+      return nil, fs.errors.file_not_found
+    end
+    if self.node.isDirectory(file) and #(self.node.list(file) or {}) > 0 then
+      return nil, fs.errors.is_a_directory
+    end
+    return self.node.remove(file)
   end
-  function _managed:open()
+
+  function _managed:list(path)
+    checkArg(1, path, "string")
+    if not self.node.exists(path) then
+      return nil, fs.errors.file_not_found
+    elseif not self.node.isDirectory(path) then
+      return nil, fs.errors.not_a_directory
+    end
+    local files = self.node.list(path) or {}
+    return files
   end
+  
+  local function fread(s, n)
+    return s.node.read(s.fd, n)
+  end
+
+  local function fwrite(s, d)
+    return s.node.write(s.fd, d)
+  end
+
+  local function fseek(s, w, o)
+    return s.node.seek(s.fd, w, o)
+  end
+
+  local function fclose(s)
+    return s.node.close(s.fd)
+  end
+
+  function _managed:open(file, mode)
+    checkArg(1, file, "string")
+    checkArg(2, mode, "string", "nil")
+    if (mode == "r" or mode == "a") and not self.node.exists(file) then
+      return nil, fs.errors.file_not_found
+    end
+    local fd = {
+      fd = self.node.open(file, mode or "r"),
+      node = self.node,
+      read = fread,
+      write = fwrite,
+      seek = fseek,
+      close = fclose
+    }
+    return fd
+  end
+  
+  local fs_mt = {__index = _managed}
   local function create_node_from_managed(proxy)
+    return setmetatable({
+      node = proxy
+    }, fs_mt)
   end
 
   local function create_node_from_unmanaged(proxy)
@@ -637,8 +800,412 @@ do
     end
   end
 
+  -- actual filesystem API now
+  fs.api = {}
+  function fs.api.open(file, mode)
+    checkArg(1, file, "string")
+    checkArg(2, mode, "string", "nil")
+    local node, err, path = resolve(file)
+    if not node then
+      return nil, err
+    end
+    mode = mode or "r"
+    return node.node:open(path, mode)
+  end
+
+  function fs.api.stat(file)
+    checkArg(1, file, "string")
+    local node, err, path = resolve(file)
+    if not node then
+      return false
+    end
+    return node.node:stat(file)
+  end
+
+  function fs.api.touch(file, ftype)
+    checkArg(1, file, "string")
+    checkArg(2, ftype, "number", "nil")
+    ftype = ftype or fs.types.file
+    local root, base = file:match("^(/?.+)/([^/]+)/?$")
+    root = root or "/"
+    base = base or file
+    local node, err, path = resolve(root)
+    if not node then
+      return nil, err
+    end
+    return node.node:touch(path .. "/" .. base, ftype)
+  end
+
+  function fs.api.remove(file)
+    checkArg(1, file, "string")
+    local node, err, pack = resolve(root)
+    if not node then
+      return nil, err
+    end
+    return node.node:remove(file)
+  end
+
   k.fs = fs
 end
+
+
+-- the Lua standard library --
+
+
+-- implementation of the FILE* API --
+
+k.log(k.loglevels.info, "base/stdlib/FILE*")
+
+do
+  local buffer = {}
+  function buffer:read_byte()
+    if self.buffer_mode ~= "none" then
+      if #self.read_buffer == 0 then
+        self.read_buffer = self.stream:read(self.buffer_size)
+      end
+      local dat = self.read_buffer:sub(-1)
+      self.read_buffer = self.read_buffer:sub(1, -2)
+      return dat
+    else
+      return self.stream:read(1)
+    end
+  end
+
+  function buffer:write_byte(byte)
+    if self.buffer_mode ~= "none" then
+      if #self.write_buffer >= self.buffer_size then
+        self.stream:write(self.write_buffer)
+        self.write_buffer = ""
+      end
+      self.write_buffer = string.format("%s%s", self.write_buffer, byte)
+    else
+      return self.stream:write(byte)
+    end
+    return true
+  end
+
+  function buffer:read_line()
+    local line = ""
+    repeat
+      local c = self:read_byte()
+      line = string.format("%s%s", line, c or "")
+    until c == "\n" or not c
+    return line
+  end
+
+  local valid = {
+    a = true,
+    l = true,
+    L = true,
+    n = true
+  }
+
+  function buffer:read_formatted(fmt)
+    checkArg(1, fmt, "string", "number")
+    if type(fmt) == "number" then
+      local read = ""
+      repeat
+        local byte = self:read_byte()
+        read = string.format("%s%s", read, byte or "")
+      until #read > fmt or not byte
+      return read
+    else
+      fmt = fmt:gsub("%*", ""):sub(1,1)
+      if #fmt == 0 or not valid[fmt] then
+        error("bad argument to 'read' (invalid format)")
+      end
+      if fmt == "l" or fmt == "L" then
+        local line = self:read_line()
+        if fmt == "l" then
+          line = line:sub(1, -2)
+        end
+        return line
+      elseif fmt == "a" then
+        local read = ""
+        repeat
+          local byte = self:read_byte()
+          read = string.format("%s%s", read, byte or "")
+        until not byte
+        return read
+      elseif fmt == "n" then
+        local read = ""
+        repeat
+          local byte = self:read_byte()
+          read = string.format("%s%s", read, byte or "")
+        until not tonumber(byte)
+        return tonumber(read)
+      end
+      error("bad argument to 'read' (invalid format)")
+    end
+  end
+
+  function buffer:read(...)
+    if self.closed or not self.mode.r then
+      return nil, "bad file descriptor"
+    end
+    local args = table.pack(...)
+    local read = {}
+    for i=1, args.n, 1 do
+      read[i] = buffer:read_formatted(args[i])
+    end
+    return table.unpack(read)
+  end
+
+  function buffer:lines(format)
+    format = format or "l"
+    return function()
+      return self:read(format)
+    end
+  end
+
+  function buffer:write(...)
+    if self.closed then
+      return nil, "bad file descriptor"
+    end
+    local args = table.pack(...)
+    local write = ""
+    for i=1, #args, 1 do
+      checkArg(i, args[i], "string", "number")
+      args[i] = tostring(args[i])
+      write = string.format("%s%s", write, args[i])
+    end
+    for i=1, #write, 1 do
+      local char = write:sub(i,i)
+      self:write_byte(char)
+    end
+    return true
+  end
+
+  function buffer:seek(whence, offset)
+    checkArg(1, whence, "string")
+    checkArg(2, offset, "number")
+    if self.closed then
+      return nil, "bad file descriptor"
+    end
+    self:flush()
+    return self.stream:seek()
+  end
+
+  function buffer:flush()
+    if self.closed then
+      return nil, "bad file descriptor"
+    end
+    if #self.write_buffer > 0 then
+      self.stream:write(self.write_buffer)
+      self.write_buffer = ""
+    end
+    return true
+  end
+
+  function buffer:close()
+    self:flush()
+    self.closed = true
+  end
+
+  local fmt = {
+    __index = buffer,
+    __name = "FILE*"
+  }
+  function k.create_fstream(base, mode)
+    local new = {
+      stream = base,
+      buffer_size = 512,
+      read_buffer = "",
+      write_buffer = "",
+      buffer_mode = "standard", -- standard, line, none
+      closed = false,
+      mode = {}
+    }
+    for c in mode:gmatch(".") do
+      new.mode[c] = true
+    end
+    return setmetatable(new, fmt)
+  end
+end
+
+
+-- io library --
+
+k.log(k.loglevels.info, "base/stdlib/io")
+
+do
+  local fs = k.fs.api
+  local mt = {
+    __index = function(t, k)
+      local info = k.scheduler.info()
+      if info.io[k] then
+        return info.io[k]
+      end
+      return nil
+    end,
+    __newindex = function(t, k, v)
+      local info = k.scheduler.info()
+      if info.io[k] then
+        info.io[k] = v
+      end
+      rawset(t, k, v)
+    end
+  }
+
+  _G.io = {}
+  function io.open(file, mode)
+    checkArg(1, file, "string")
+    checkArg(2, mode, "string", "nil")
+    mode = mode or "r"
+    local handle, err = fs.open(file)
+    if not handle then
+      return nil, err
+    end
+    return k.create_fstream(handle, mode)
+  end
+
+  -- popen should be defined in userspace so the shell can handle it
+  -- tmpfile should be defined in userspace also
+  function io.popen()
+    return nil, "io.popen unsupported at kernel level"
+  end
+
+  function io.read(...)
+    return io.input():read(...)
+  end
+
+  function io.write(...)
+    return io.output():write(...)
+  end
+
+  function io.lines(file, fmt)
+    file = file or io.stdin
+    return file:lines(fmt)
+  end
+
+  local function stream(k)
+    return function(v)
+      local t = k.scheduler.info().io
+      if v then
+        t[k] = v
+      end
+      return t[k]
+    end
+  end
+
+  io.input = stream("input")
+  io.output = stream("output")
+
+  function io.type(stream)
+    assert(stream, "bad argument #1 (value expected)")
+    if tostring(stream):match("FILE") then
+      if stream.closed then
+        return "closed file"
+      end
+      return "file"
+    end
+    return nil
+  end
+
+  function io.flush(s)
+    s = s or io.stdout
+    return s:flush()
+  end
+
+  function io.close(stream)
+    if stream == io.stdin or stream == io.stdout or stream == io.stderr then
+      return nil, "cannot close standard file"
+    end
+    return stream:close()
+  end
+
+  setmetatable(io, mt)
+end
+
+
+-- package API.  this is probably the lib i copy-paste the most. --
+
+k.log(k.loglevels.info, "base/stdlib/package")
+
+do
+  _G.package = {}
+  local loaded = {
+    os = os,
+    io = io,
+    math = math,
+    string = string,
+    table = table,
+    unicode = unicode
+  }
+  package.loaded = loaded
+  package.path = "/lib/?.lua;/lib/lib?.lua;/lib/?/init.lua"
+  local fs = k.fs.api
+
+  local function libError(name, searched)
+    local err = "module '%s' not found:\n\tno field package.loaded['%s']"
+    err = err .. ("\n\tno file '%s'"):rep(#searched)
+    error(string.format(err, name, name, table.unpack(searched)))
+  end
+
+  function package.searchpath(name, path, sep, rep)
+    checkArg(1, name, "string")
+    checkArg(2, path, "string")
+    checkArg(3, sep, "string", "nil")
+    checkArg(4, rep, "string", "nil")
+    sep = "%" .. (sep or ".")
+    rep = rep or "/"
+    local searched = {}
+    name = name:gsub(sep, rep)
+    for search in path:gmatch("[^;]+") do
+      search = search:gsub("%?", name)
+      if fs.stat(search) then
+        return search
+      end
+      searched[#searched + 1] = search
+    end
+    return nil, searched
+  end
+
+  package.protect = k.util.protect
+
+  function package.delay(lib, file)
+    local mt = {
+      __index = function(tbl, key)
+        setmetatable(lib, nil)
+        setmetatable(lib.internal or {}, nil)
+        (k.userspace.dofile or dofile)(file)
+        return tbl[key]
+      end
+    }
+    if lib.internal then
+      setmetatable(lib.internal, mt)
+    end
+    setmetatable(lib, mt)
+  end
+
+  -- let's define this here because WHY NOT
+  function _G.loadfile(file, mode, env)
+    checkArg(1, file, "string")
+    checkArg(2, mode, "string", "nil")
+    checkArg(3, env, "table", "nil")
+    local handle, err = io.open(file, "r")
+    if not handle then
+      return nil, err
+    end
+    local data = handle:read("a")
+    handle:close()
+    return load(data, "="..file, "bt", k.userspace or _G)
+  end
+
+  function _G.dofile(file)
+    checkArg(1, file, "string")
+    local ok, err = loadfile(file)
+    if not ok then
+      error(err)
+    end
+    local stat, ret = xpcall(ok, debug.traceback)
+    if not stat and ret then
+      error(ret)
+    end
+    return ret
+  end
+end
+
 
 
 -- custom types

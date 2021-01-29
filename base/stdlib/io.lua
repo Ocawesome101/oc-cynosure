@@ -1,5 +1,7 @@
 -- io library --
 
+k.log(k.loglevels.info, "base/stdlib/io")
+
 do
   local fs = k.fs.api
   local mt = {

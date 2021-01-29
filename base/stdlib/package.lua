@@ -1,5 +1,7 @@
 -- package API.  this is probably the lib i copy-paste the most. --
 
+k.log(k.loglevels.info, "base/stdlib/package")
+
 do
   _G.package = {}
   local loaded = {
@@ -12,7 +14,7 @@ do
   }
   package.loaded = loaded
   package.path = "/lib/?.lua;/lib/lib?.lua;/lib/?/init.lua"
-  local fs = fs.api
+  local fs = k.fs.api
 
   local function libError(name, searched)
     local err = "module '%s' not found:\n\tno field package.loaded['%s']"
