@@ -44,14 +44,10 @@ do
   function process:push_signal(...)
     local signal = table.pack(...)
     table.insert(self.queue, signal)
-    -- this is how we tell computer.pullSignal that we've pushed a signal
-    -- not the best way of doing it but It Works(TM)
-    c_pushSignal("signal_pushed", self.pid)
     return true
   end
 
-  -- we wrap computer.pullSignal later to use this
-  -- there are no timeouts, computer.pullSignal still manages that
+  -- there are no timeouts, the scheduler manages that
   function process:pull_signal()
     if #self.queue > 0 then
       return table.remove(self.queue, 1)
@@ -69,6 +65,7 @@ do
         stdout = args.stdout or {},
         stderr = args.stderr or {}
       },
+      queue = {},
       threads = {},
       waiting = true,
       stopped = false,

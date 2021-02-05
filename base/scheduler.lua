@@ -46,31 +46,6 @@ do
     return info
   end
 
-  -- wrap computer.{push,pull}Signal
-  local c_pullSignal, c_pushSignal = computer.pullSignal, computer.pushSignal
-  function computer.pullSignal(timeout)
-    local max = computer.uptime() + timeout
-    local current = api.info()
-    local sig = current.data:pull_signal()
-    if sig then
-      return table.unpack(sig, 1, sig.n)
-    end
-    repeat
-      local sig = table.pack(c_pullSignal(max - computer.uptime()))
-      if sig.n > 0 then
-        if sig[1] == "signal_pushed" then
-          local csig = current.data:pull_signal()
-          if csig then
-            return table.unpack(csig, 1, csig.n)
-          end
-        else
-          return table.unpack(sig, 1, sig.n)
-        end
-      end
-    until computer.uptime() <= max
-    return nil
-  end
-
   function api.loop()
     while processes[1] do
       local to_run = {}
@@ -87,9 +62,9 @@ do
           break
         end
       end
-      local sig = table.pack(c_pullSignal(min_timeout))
+      local sig = table.pack(pullSignal(min_timeout))
       for k, v in pairs(processes) do
-        if v.deadline <= computer.uptime() or #v.queue > 0 or
+        if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
             not (v.stopped or going_to_run[v.pid]) then
           to_run[#to_run + 1] = v
           if v.resume_next then
@@ -99,7 +74,11 @@ do
         end
       end
       for i, proc in ipairs(to_run) do
-        local ok, err = table.resume(table.unpack(sig))
+        local psig = sig
+        if #proc.queue > 0 then -- the process has queued signals
+          proc:push_signal(table.unpack(sig))
+        end
+        local ok, err = proc:resume(table.unpack(psig))
       end
     end
     if not k.is_shutting_down then
