@@ -16,7 +16,7 @@ do
       if v:status() == "dead" then
         self.threads[k] = nil
         if not result[1] then
-          self:push_signal("thread_died")
+          self:push_signal("thread_died", v.id)
         end
       end
     end
@@ -26,15 +26,28 @@ do
     return true
   end
 
-  function process:status()
+  local id = 0
+  function process:add_thread(func)
+    checkArg(1, func, "function")
+    local new = coroutine.create(func)
+    id = id + 1
+    new.id = id
+    self.threads[#self.threads + 1] = new
+    return id
   end
 
+  function process:status()
+    return self.coroutine:status()
+  end
+
+  local c_pushSignal = computer.pushSignal
   function process:push_signal(...)
     local signal = table.pack(...)
     table.insert(self.queue, signal)
     -- this is how we tell computer.pullSignal that we've pushed a signal
     -- not the best way of doing it but It Works(TM)
     c_pushSignal("signal_pushed", self.pid)
+    return true
   end
 
   -- we wrap computer.pullSignal later to use this
@@ -51,10 +64,16 @@ do
     local new = setmetatable({
       name = args.name,
       pid = pid,
+      io = {
+        stdin = args.stdin or {},
+        stdout = args.stdout or {},
+        stderr = args.stderr or {}
+      },
       threads = {},
       waiting = true,
       stopped = false,
-      handlers = {},
+      handles = {},
+      deadline = 0,
       coroutine = {} -- overrides for some coroutine methods
                      -- potentially used in pipes
     }, proc_mt)

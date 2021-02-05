@@ -20,7 +20,7 @@ do
   end
 end
 
-print("-> Writing temporary file includes.lua")
+print("\27[92m-> \27[39mWriting temporary file includes.lua")
 local handle = assert(io.open("includes.lua", "w"))
 for i=1, #include, 1 do
   handle:write(string.format("--#include \"%s\"\n", include[i]))

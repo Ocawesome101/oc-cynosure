@@ -36,6 +36,19 @@ do
     function k.log()
     end
   end
+
+  local raw_pullsignal = computer.pullSignal
+  function k.panic(...)
+    local msg = safe_concat(...)
+    k.log(k.loglevels.panic, "-- begin stacktrace --")
+    local traceback = debug.traceback(msg, 2)
+    for line in traceback:gmatch("[^\n]+") do
+      k.log(k.loglevels.panic, line)
+    end
+    k.log(k.loglevels.panic, "-- end stacktrace --")
+    k.log(k.loglevels.panic, "!! PANIC !!")
+    while true do raw_pullsignal() end
+  end
 end
 
 k.log(k.loglevels.info, "Starting\27[33m", _OSVERSION, "\27[37m")

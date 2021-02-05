@@ -32,9 +32,9 @@ do
   setmetatable(_coroutine, {
     __index = function(t, k)
       if k.scheduler then
-        local process = k.scheduler.current()
-        if process.coroutine[k] then
-          return process.coroutine[k]
+        local process = k.scheduler.info()
+        if process.data.coroutine[k] then
+          return process.data.coroutine[k]
         end
       end
       return old_coroutine[k]
@@ -43,7 +43,7 @@ do
       -- build iterable table
       local iter = k.util.merge_tables(old_coroutine,
                       _coroutine,
-                      (k.scheduler and k.scheduler.current() or {}))
+                      (k.scheduler and k.scheduler.info().data.coroutine or {}))
       return pairs(iter)
     end,
     __metatable = {}

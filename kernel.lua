@@ -197,6 +197,12 @@ do
     end
   end
 
+  function commands:n(args)
+    local n = args[1] or 0
+    if n == 6 then
+      self.rb = string.format("%s\27[%d;%dR", self.cy, self.cx)
+    end
+  end
 
   -- adjust more terminal attributes
   function control:c(args)
@@ -295,16 +301,42 @@ do
     [203] = "\27[D", -- left
   }
 
-  -- This function returns a single key press every time it is called.  Later
-  --   APIs (the pty module) use this as a keypress listener
-  function _stream:read()
-    local signal
-    repeat
-      signal = table.pack(computer.pullSignal())
-    until signal[1] == "key_down" and self.keyboards[signal[2]]
-                                  and (signal[3] > 0 or aliases[signal[4]])
-    return aliases[signal[4]] or --                                   :)
+  function _stream:key_down(...)
+    local signal = table.pack(...)
+    local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
+    if self.attributes.raw and self.echo then
+      local ch = signal[3]
+      if #char = 1 then
+        char = ("^" .. string.char(
+            (ch == 0 and 32) or
+            (ch < 27 and ch + 96) or
+            (ch == 27 and "[") or
+            (ch == 28 and "\\") or
+            (ch == 29 and "]") or
+            (ch == 30 and "~") or
+            (ch == 31 and "?") or ch
+          ):upper()
+        )
+      end
+    else
+      if char == "\13" then char = "\n"
+      elseif char == "\8" then self:write("\8 \8") end
+    end
+    if self.echo then
+      self:write(char)
+    end
+    self.rb = string.format("%s%s", self.rb, char)
+  end
+  
+  function _stream:read(n)
+    repeat
+      coroutine.yield()
+    until #self.rb >= n and ((not self.attributes.line) or
+                                  self.rb:find("\n") >= n)
+    local data = self.rb:sub(1, n)
+    self.rb = self.rb:sub(#data + 1)
+    return data
   end
 
   local function closed()
@@ -330,7 +362,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {}, -- used by other things but not directly by this terminal
+      attributes = {}, -- terminal attributes :P
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false,
       gpu = proxy,
@@ -339,6 +371,7 @@ do
       cy = 1,
       fg = 0xFFFFFF,
       bg = 0,
+      rb = ""
     }, {__index = _stream})
     new.w, new.h = proxy.maxResolution()
     proxy.setResolution(new.w, new.h)
@@ -346,6 +379,7 @@ do
     for _, keyboard in pairs(component.invoke(screen, "getKeyboards")) do
       new.keyboards[keyboard] = true
     end
+    k.event.register("key_down", function(...)return new:key_down(...)end)
     return new
   end
 end

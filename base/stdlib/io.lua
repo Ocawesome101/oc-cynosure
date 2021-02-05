@@ -7,17 +7,14 @@ do
   local mt = {
     __index = function(t, k)
       local info = k.scheduler.info()
-      if info.io[k] then
-        return info.io[k]
+      if info.data.io[k] then
+        return info.data.io[k]
       end
       return nil
     end,
     __newindex = function(t, k, v)
       local info = k.scheduler.info()
-      if info.io[k] then
-        info.io[k] = v
-      end
-      rawset(t, k, v)
+      info.data.io[k] = v
     end
   }
 
@@ -39,6 +36,10 @@ do
     return nil, "io.popen unsupported at kernel level"
   end
 
+  function io.tmpfile()
+    return nil, "io.tmpfile unsupported at kernel level"
+  end
+
   function io.read(...)
     return io.input():read(...)
   end
@@ -54,7 +55,7 @@ do
 
   local function stream(k)
     return function(v)
-      local t = k.scheduler.info().io
+      local t = k.scheduler.info().data.io
       if v then
         t[k] = v
       end
