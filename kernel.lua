@@ -1,5 +1,6 @@
 -- Cynosure kernel.  Should (TM) be mostly drop-in compatible with Paragon. --
 -- Might even be better.  Famous last words!
+-- Copyright (c) 2021 i develop things under the GNU GPLv3.
 
 _G.k = { cmdline = table.pack(...), modules = {} }
 do
@@ -35,8 +36,8 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = ""
-  _G._OSVERSION = string.format("%s r%s %s", k._NAME, k._RELEASE, k._VERSION)
+  k._VERSION = "2021.02.06"
+  _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
 
@@ -1691,5 +1692,20 @@ end
 -- load init, i guess
 
 k.log(k.loglevels.info, "base/load_init")
+
+do
+  k.log(k.loglevels.info, "Creating userspace sandbox")
+  local sbox = k.util.copy(_G)
+  k.userspace = sbox
+  sbox._G = sbox
+  k.hooks.call("sandbox", sbox)
+
+  k.log(k.loglevels.info, "Loading init from",
+                               k.cmdline.init or "/sbin/init.lua")
+  local ok, err = loadfile(k.cmdline.init or "/sbin/init.lua")
+  if not ok then
+    k.panic(err)
+  end
+end
 
 k.panic("Premature exit!")
