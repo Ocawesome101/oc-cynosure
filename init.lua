@@ -11,6 +11,7 @@ end
 --#include "base/args.lua"
 --#include "base/version.lua"
 --#include "base/tty.lua"
+--#include "base/event.lua"
 --#include "base/logger.lua"
 --#include "base/hooks.lua"
 --#include "base/util.lua"
@@ -25,8 +26,4 @@ end
 --#include "base/scheduler.lua"
 --#include "includes.lua"
 --#include "base/load_init.lua"
-
--- temporary main loop
-while true do
-  computer.pullSignal()
-end
+k.panic("Premature exit!")

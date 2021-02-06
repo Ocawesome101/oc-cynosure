@@ -62,7 +62,9 @@ do
       pid = pid,
       io = {
         stdin = args.stdin or {},
+        input = args.input or args.stdin or {},
         stdout = args.stdout or {},
+        output = args.output or args.stdout or {},
         stderr = args.stderr or {}
       },
       queue = {},
@@ -70,10 +72,13 @@ do
       waiting = true,
       stopped = false,
       handles = {},
+      cputime = 0,
       deadline = 0,
       coroutine = {} -- overrides for some coroutine methods
                      -- potentially used in pipes
     }, proc_mt)
+    args.stdin, args.stdout, args.stderr,
+                    args.input, args.output = nil, nil, nil
     for k, v in pairs(args) do
       new[k] = v
     end

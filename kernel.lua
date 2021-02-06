@@ -50,7 +50,7 @@ do
     0xFFFF00,
     0x0000FF,
     0xFF00FF,
-    0x00FFFF,
+    0x00AAFF,
     0xFFFFFF
   }
 
@@ -190,9 +190,13 @@ do
       elseif n > 29 and n < 38 then
         self.fg = colors[n - 29]
         self.gpu.setForeground(self.fg)
+      elseif n == 39 then
+        self.fg = colors[8]
       elseif n > 39 and n < 48 then
         self.bg = colors[n - 39]
         self.gpu.setBackground(self.bg)
+      elseif n == 49 then
+        self.bg = colors[1]
       end
     end
   end
@@ -307,7 +311,7 @@ do
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
     if self.attributes.raw and self.echo then
       local ch = signal[3]
-      if #char = 1 then
+      if #char == 1 then
         char = ("^" .. string.char(
             (ch == 0 and 32) or
             (ch < 27 and ch + 96) or
@@ -349,6 +353,7 @@ do
     self.write = closed
     self.flush = closed
     self.close = closed
+    k.event.unregister(self.key_handler_id)
     return true
   end
 
@@ -362,7 +367,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {}, -- terminal attributes :P
+      attributes = {}, -- terminal attributes
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false,
       gpu = proxy,
@@ -379,9 +384,51 @@ do
     for _, keyboard in pairs(component.invoke(screen, "getKeyboards")) do
       new.keyboards[keyboard] = true
     end
-    k.event.register("key_down", function(...)return new:key_down(...)end)
+    new.key_handler_id = k.event.register("key_down", function(...)
+      return new:key_down(...)
+    end)
     return new
   end
+end
+
+
+-- event handling --
+
+do
+  local event = {}
+  local handlers = {}
+
+  local pull = computer.pullSignal
+  computer.pullSignalOld = pull
+
+  function computer.pullSignal(timeout)
+    checkArg(1, timeout, "number", "nil")
+    local sig = table.pack(pull(timeout))
+    if sig.n == 0 then return nil end
+    for k, v in pairs(handlers) do
+      if v.signal == sig[1] then
+        v.callback()
+      end
+    end
+    return table.unpack(sig)
+  end
+
+  local n = 0
+  function event.register(sig, call)
+    checkArg(1, sig, "string")
+    checkArg(2, call, "function")
+    n = n + 1
+    handlers[n] = {signal=sig,callback=call}
+    return n
+  end
+
+  function event.unregister(id)
+    checkArg(1, id, "number")
+    handlers[id] = nil
+    return true
+  end
+
+  k.event = event
 end
 
 
@@ -414,7 +461,8 @@ do
     function k.log(level, ...)
       local msg = safe_concat(...)
       if (tonumber(k.cmdline.loglevel) or 1) <= level then
-        k.logio:write(string.format("[%4.4f] %s\n", k.uptime(), msg))
+        k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),
+          msg))
       end
       return true
     end
@@ -422,6 +470,25 @@ do
     k.logio = nil
     function k.log()
     end
+  end
+
+  local raw_pullsignal = computer.pullSignalOld
+  computer.pullSignalOld = nil
+  function k.panic(...)
+    local msg = safe_concat(...)
+    computer.beep(440, 0.25)
+    computer.beep(380, 0.25)
+    k.log(k.loglevels.panic, "-- \27[31mbegin stacktrace\27[37m --")
+    local traceback = debug.traceback(msg, 2)
+      :gsub("\t", "  ")
+      :gsub("([^\n]+):(%d+):", "\27[36m%1\27[37m:\27[35m%2\27[37m:")
+      :gsub("'([^']+)'\n", "\27[33m'%1'\27[37m\n")
+    for line in traceback:gmatch("[^\n]+") do
+      k.log(k.loglevels.panic, line)
+    end
+    k.log(k.loglevels.panic, "-- \27[31mend stacktrace\27[37m --")
+    k.log(k.loglevels.panic, "\27[33m!! \27[31mPANIC\27[33m !!\27[37m")
+    while true do raw_pullsignal() end
   end
 end
 
@@ -433,8 +500,8 @@ k.log(k.loglevels.info, "Starting\27[33m", _OSVERSION, "\27[37m")
 k.log(k.loglevels.info, "base/hooks")
 
 do
-  k.hooks = {}
   local hooks = {}
+  k.hooks = {}
   function k.hooks.add(name, func)
     checkArg(1, name, "string")
     checkArg(2, func, "function")
@@ -558,6 +625,7 @@ k.log(k.loglevels.info, "base/shutdown")
 do
   local shutdown = computer.shutdown
   function k.shutdown(rbt)
+    k.is_shutting_down = true
     k.hooks.call("shutdown", rbt)
     shutdown(rbt)
   end
@@ -635,6 +703,15 @@ do
     return segments
   end
 
+  -- "clean" a path
+  local function clean(path)
+    return table.concat(
+      split(
+        path
+      ), "/"
+    )
+  end
+
   local faux = {children = mounts}
   local resolving = {}
   local resolve = function(path)
@@ -642,6 +719,7 @@ do
       return nil, "recursive mount detected"
     end
     resolving[path] = true
+    path = clean(path)
     local current, parent = faux
     if not current.children["/"] then
       return nil, "root filesystem is not mounted!"
@@ -879,6 +957,54 @@ do
     return node.node:remove(file)
   end
 
+  local mounts = {}
+
+  function fs.api.mount(node, path)
+    checkArg(1, node, "string")
+    checkArg(2, path, "string")
+    local device, err
+    if k.sysfs then
+      local sdev, serr = k.sysfs.resolve_device(node)
+      if not sdev then return nil, serr end
+      device, err = fs.get_filesystem_driver(node)
+    else
+      device, err = fs.get_filesystem_driver(node)
+    end
+    if not device then
+      return nil, err
+    end
+    path = clean(path)
+    local root, fname = path:match("^(/?.+)/([^/]+)/?$")
+    root = root or "/"
+    fname = fname or path
+    local node, err, rpath = resolve(root)
+    if not node then
+      return nil, err
+    end
+    local full = clean(string.format("%s/%s", rpath, fname))
+    node.children[full] = rpath
+    mounts[path] = device.node.getLabel() or "unknown"
+    return true
+  end
+
+  function fs.api.umount(path)
+    checkArg(1, path, "string")
+    path = clean(path)
+    local root, fname = path:match("^(/?.+)/([^/]+)/?$")
+    root = root or "/"
+    fname = fname or path
+    local node, err, path = resolve(root)
+    if not node then
+      return nil, err
+    end
+    local full = clean(strint.format("%s/%s", path, fname))
+    node.children[path] = nil
+    return true
+  end
+
+  function fs.api.mounts()
+  end
+
   k.fs = fs
 end
 
@@ -1067,17 +1193,14 @@ do
   local mt = {
     __index = function(t, k)
       local info = k.scheduler.info()
-      if info.io[k] then
-        return info.io[k]
+      if info.data.io[k] then
+        return info.data.io[k]
       end
       return nil
     end,
     __newindex = function(t, k, v)
       local info = k.scheduler.info()
-      if info.io[k] then
-        info.io[k] = v
-      end
-      rawset(t, k, v)
+      info.data.io[k] = v
     end
   }
 
@@ -1099,6 +1222,10 @@ do
     return nil, "io.popen unsupported at kernel level"
   end
 
+  function io.tmpfile()
+    return nil, "io.tmpfile unsupported at kernel level"
+  end
+
   function io.read(...)
     return io.input():read(...)
   end
@@ -1114,7 +1241,7 @@ do
 
   local function stream(k)
     return function(v)
-      local t = k.scheduler.info().io
+      local t = k.scheduler.info().data.io
       if v then
         t[k] = v
       end
@@ -1249,7 +1376,7 @@ k.log(k.loglevels.info, "base/types")
 do
   local old_type = type
   function _G.type(obj)
-    if type(obj) == "table" then
+    if old_type(obj) == "table" then
       local mt = getmetatable(obj) or {}
       return mt.__name or mt.__type or old_type(obj)
     else
@@ -1310,9 +1437,9 @@ do
   setmetatable(_coroutine, {
     __index = function(t, k)
       if k.scheduler then
-        local process = k.scheduler.current()
-        if process.coroutine[k] then
-          return process.coroutine[k]
+        local process = k.scheduler.info()
+        if process.data.coroutine[k] then
+          return process.data.coroutine[k]
         end
       end
       return old_coroutine[k]
@@ -1321,7 +1448,7 @@ do
       -- build iterable table
       local iter = k.util.merge_tables(old_coroutine,
                       _coroutine,
-                      (k.scheduler and k.scheduler.current() or {}))
+                      (k.scheduler and k.scheduler.info().data.coroutine or {}))
       return pairs(iter)
     end,
     __metatable = {}
@@ -1347,7 +1474,7 @@ do
       if v:status() == "dead" then
         self.threads[k] = nil
         if not result[1] then
-          self:push_signal("thread_died")
+          self:push_signal("thread_died", v.id)
         end
       end
     end
@@ -1357,19 +1484,28 @@ do
     return true
   end
 
-  function process:status()
+  local id = 0
+  function process:add_thread(func)
+    checkArg(1, func, "function")
+    local new = coroutine.create(func)
+    id = id + 1
+    new.id = id
+    self.threads[#self.threads + 1] = new
+    return id
   end
 
+  function process:status()
+    return self.coroutine:status()
+  end
+
+  local c_pushSignal = computer.pushSignal
   function process:push_signal(...)
     local signal = table.pack(...)
     table.insert(self.queue, signal)
-    -- this is how we tell computer.pullSignal that we've pushed a signal
-    -- not the best way of doing it but It Works(TM)
-    c_pushSignal("signal_pushed", self.pid)
+    return true
   end
 
-  -- we wrap computer.pullSignal later to use this
-  -- there are no timeouts, computer.pullSignal still manages that
+  -- there are no timeouts, the scheduler manages that
   function process:pull_signal()
     if #self.queue > 0 then
       return table.remove(self.queue, 1)
@@ -1382,13 +1518,25 @@ do
     local new = setmetatable({
       name = args.name,
       pid = pid,
+      io = {
+        stdin = args.stdin or {},
+        input = args.input or args.stdin or {},
+        stdout = args.stdout or {},
+        output = args.output or args.stdout or {},
+        stderr = args.stderr or {}
+      },
+      queue = {},
       threads = {},
       waiting = true,
       stopped = false,
-      handlers = {},
+      handles = {},
+      cputime = 0,
+      deadline = 0,
       coroutine = {} -- overrides for some coroutine methods
                      -- potentially used in pipes
     }, proc_mt)
+    args.stdin, args.stdout, args.stderr,
+                    args.input, args.output = nil, nil, nil
     for k, v in pairs(args) do
       new[k] = v
     end
@@ -1414,7 +1562,127 @@ k.log(k.loglevels.info, "base/scheduler")
 
 do
   local processes = {}
-  local x
+  local current
+
+  local api = {}
+
+  function api.spawn(args)
+    checkArg(1, args.name, "string")
+    checkArg(2, args.func, "function")
+    local parent = current
+    local new = k.create_process {
+      name = args.name,
+      parent = parent.pid,
+      stdin = parent.stdin or args.stdin,
+      stdout = parent.stdout or args.stdout,
+      input = args.input,
+      output = args.output
+    }
+    new:add_thread(args.func)
+    processes[new.pid] = new
+    if k.sysfs then k.sysfs.add_to("proc", new) end
+    return new
+  end
+
+  function api.info(pid)
+    checkArg(1, pid, "number", "nil")
+    local proc
+    if pid then proc = processes[pid]
+    else proc = current end
+    if not proc then
+      return nil, "no such process"
+    end
+    local info = {
+      pid = proc.pid,
+      waiting = proc.waiting,
+      stopped = proc.stopped,
+      deadline = proc.deadline,
+      n_threads = #proc.threads,
+      status = proc:status(),
+      cputime = proc.cputime
+    }
+    if proc.pid == current.pid then
+      info.data = {
+        push_signal = proc.push_signal,
+        pull_signal = proc.pull_signal,
+        io = proc.io,
+        handles = proc.handles,
+        coroutine = proc.coroutine
+      }
+    end
+    return info
+  end
+
+  function api.kill(proc)
+    checkArg(1, proc, "number", "nil")
+    proc = proc or current.pid
+    if not processes[proc] then
+      return nil, "no such process"
+    end
+    processes[proc] = nil
+  end
+
+  function api.loop()
+    while processes[1] do
+      local to_run = {}
+      local going_to_run = {}
+      local min_timeout = math.huge
+      for k, v in pairs(processes) do
+        if not v.stopped then
+          if v.deadline - computer.uptime() < min_timeout then
+            min_timeout = v.deadline - computer.uptime()
+          end
+        end
+        if min_timeout <= 0 then
+          min_timeout = 0
+          break
+        end
+      end
+      local sig = table.pack(pullSignal(min_timeout))
+      for k, v in pairs(processes) do
+        if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
+            not (v.stopped or going_to_run[v.pid]) then
+          to_run[#to_run + 1] = v
+          if v.resume_next then
+            to_run[#to_run + 1] = v.resume_next
+            going_to_run[v.resume_next.pid] = true
+          end
+        end
+      end
+      for i, proc in ipairs(to_run) do
+        local psig = sig
+        local start_time = computer.uptime()
+        if #proc.queue > 0 then -- the process has queued signals
+          proc:push_signal(table.unpack(sig))
+          psig = proc:pull_signal()
+        end
+        local ok, err = proc:resume(table.unpack(psig))
+        if ok == "__internal_process_exit" or not ok then
+          local exit = err or 0
+          if type(err) == "string" then
+            exit = 127
+          else
+            exit = err or 0
+            err = "exited"
+          end
+          err = err or "died"
+          computer.pushSignal("process_died", proc.pid, exit, err)
+          for k, v in pairs(proc.handles) do
+            pcall(v.close, v)
+          end
+          processes[proc.pid] = nil
+        else
+          proc.cputime = proc.cputime + computer.uptime() - start_time
+        end
+      end
+    end
+    if not k.is_shutting_down then
+      -- !! PANIC !!
+      k.panic("init died")
+    end
+  end
+
+  k.scheduler = api
 end
 
 
@@ -1424,8 +1692,4 @@ end
 
 k.log(k.loglevels.info, "base/load_init")
 
-
--- temporary main loop
-while true do
-  computer.pullSignal()
-end
+k.panic("Premature exit!")

@@ -40,6 +40,15 @@ do
     return segments
   end
 
+  -- "clean" a path
+  local function clean(path)
+    return table.concat(
+      split(
+        path
+      ), "/"
+    )
+  end
+
   local faux = {children = mounts}
   local resolving = {}
   local resolve = function(path)
@@ -47,6 +56,7 @@ do
       return nil, "recursive mount detected"
     end
     resolving[path] = true
+    path = clean(path)
     local current, parent = faux
     if not current.children["/"] then
       return nil, "root filesystem is not mounted!"
@@ -282,6 +292,54 @@ do
       return nil, err
     end
     return node.node:remove(file)
+  end
+
+  local mounts = {}
+
+  function fs.api.mount(node, path)
+    checkArg(1, node, "string")
+    checkArg(2, path, "string")
+    local device, err
+    if k.sysfs then
+      local sdev, serr = k.sysfs.resolve_device(node)
+      if not sdev then return nil, serr end
+      device, err = fs.get_filesystem_driver(node)
+    else
+      device, err = fs.get_filesystem_driver(node)
+    end
+    if not device then
+      return nil, err
+    end
+    path = clean(path)
+    local root, fname = path:match("^(/?.+)/([^/]+)/?$")
+    root = root or "/"
+    fname = fname or path
+    local node, err, rpath = resolve(root)
+    if not node then
+      return nil, err
+    end
+    local full = clean(string.format("%s/%s", rpath, fname))
+    node.children[full] = rpath
+    mounts[path] = device.node.getLabel() or "unknown"
+    return true
+  end
+
+  function fs.api.umount(path)
+    checkArg(1, path, "string")
+    path = clean(path)
+    local root, fname = path:match("^(/?.+)/([^/]+)/?$")
+    root = root or "/"
+    fname = fname or path
+    local node, err, path = resolve(root)
+    if not node then
+      return nil, err
+    end
+    local full = clean(strint.format("%s/%s", path, fname))
+    node.children[path] = nil
+    return true
+  end
+
+  function fs.api.mounts()
   end
 
   k.fs = fs

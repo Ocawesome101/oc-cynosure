@@ -11,10 +11,18 @@ do
   function api.spawn(args)
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
-    local new = k.create_process({name = args.name})
+    local parent = current
+    local new = k.create_process {
+      name = args.name,
+      parent = parent.pid,
+      stdin = parent.stdin or args.stdin,
+      stdout = parent.stdout or args.stdout,
+      input = args.input,
+      output = args.output
+    }
     new:add_thread(args.func)
     processes[new.pid] = new
-    if k.procfs then k.procfs.add(new) end
+    if k.sysfs then k.sysfs.add_to("proc", new) end
     return new
   end
 
@@ -32,7 +40,8 @@ do
       stopped = proc.stopped,
       deadline = proc.deadline,
       n_threads = #proc.threads,
-      status = proc.status
+      status = proc:status(),
+      cputime = proc.cputime
     }
     if proc.pid == current.pid then
       info.data = {
@@ -40,10 +49,19 @@ do
         pull_signal = proc.pull_signal,
         io = proc.io,
         handles = proc.handles,
-        coroutine = proc.handlers
+        coroutine = proc.coroutine
       }
     end
     return info
+  end
+
+  function api.kill(proc)
+    checkArg(1, proc, "number", "nil")
+    proc = proc or current.pid
+    if not processes[proc] then
+      return nil, "no such process"
+    end
+    processes[proc] = nil
   end
 
   function api.loop()
@@ -75,10 +93,29 @@ do
       end
       for i, proc in ipairs(to_run) do
         local psig = sig
+        local start_time = computer.uptime()
         if #proc.queue > 0 then -- the process has queued signals
           proc:push_signal(table.unpack(sig))
+          psig = proc:pull_signal()
         end
         local ok, err = proc:resume(table.unpack(psig))
+        if ok == "__internal_process_exit" or not ok then
+          local exit = err or 0
+          if type(err) == "string" then
+            exit = 127
+          else
+            exit = err or 0
+            err = "exited"
+          end
+          err = err or "died"
+          computer.pushSignal("process_died", proc.pid, exit, err)
+          for k, v in pairs(proc.handles) do
+            pcall(v.close, v)
+          end
+          processes[proc.pid] = nil
+        else
+          proc.cputime = proc.cputime + computer.uptime() - start_time
+        end
       end
     end
     if not k.is_shutting_down then

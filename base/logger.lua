@@ -27,7 +27,8 @@ do
     function k.log(level, ...)
       local msg = safe_concat(...)
       if (tonumber(k.cmdline.loglevel) or 1) <= level then
-        k.logio:write(string.format("[%4.4f] %s\n", k.uptime(), msg))
+        k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),
+          msg))
       end
       return true
     end
@@ -37,16 +38,22 @@ do
     end
   end
 
-  local raw_pullsignal = computer.pullSignal
+  local raw_pullsignal = computer.pullSignalOld
+  computer.pullSignalOld = nil
   function k.panic(...)
     local msg = safe_concat(...)
-    k.log(k.loglevels.panic, "-- begin stacktrace --")
+    computer.beep(440, 0.25)
+    computer.beep(380, 0.25)
+    k.log(k.loglevels.panic, "-- \27[31mbegin stacktrace\27[37m --")
     local traceback = debug.traceback(msg, 2)
+      :gsub("\t", "  ")
+      :gsub("([^\n]+):(%d+):", "\27[36m%1\27[37m:\27[35m%2\27[37m:")
+      :gsub("'([^']+)'\n", "\27[33m'%1'\27[37m\n")
     for line in traceback:gmatch("[^\n]+") do
       k.log(k.loglevels.panic, line)
     end
-    k.log(k.loglevels.panic, "-- end stacktrace --")
-    k.log(k.loglevels.panic, "!! PANIC !!")
+    k.log(k.loglevels.panic, "-- \27[31mend stacktrace\27[37m --")
+    k.log(k.loglevels.panic, "\27[33m!! \27[31mPANIC\27[33m !!\27[37m")
     while true do raw_pullsignal() end
   end
 end

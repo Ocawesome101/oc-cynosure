@@ -5,7 +5,7 @@ k.log(k.loglevels.info, "base/types")
 do
   local old_type = type
   function _G.type(obj)
-    if type(obj) == "table" then
+    if old_type(obj) == "table" then
       local mt = getmetatable(obj) or {}
       return mt.__name or mt.__type or old_type(obj)
     else

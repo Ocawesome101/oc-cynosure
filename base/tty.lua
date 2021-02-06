@@ -8,7 +8,7 @@ do
     0xFFFF00,
     0x0000FF,
     0xFF00FF,
-    0x00FFFF,
+    0x00AAFF,
     0xFFFFFF
   }
 
@@ -148,9 +148,13 @@ do
       elseif n > 29 and n < 38 then
         self.fg = colors[n - 29]
         self.gpu.setForeground(self.fg)
+      elseif n == 39 then
+        self.fg = colors[8]
       elseif n > 39 and n < 48 then
         self.bg = colors[n - 39]
         self.gpu.setBackground(self.bg)
+      elseif n == 49 then
+        self.bg = colors[1]
       end
     end
   end
@@ -265,7 +269,7 @@ do
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
     if self.attributes.raw and self.echo then
       local ch = signal[3]
-      if #char = 1 then
+      if #char == 1 then
         char = ("^" .. string.char(
             (ch == 0 and 32) or
             (ch < 27 and ch + 96) or
@@ -307,6 +311,7 @@ do
     self.write = closed
     self.flush = closed
     self.close = closed
+    k.event.unregister(self.key_handler_id)
     return true
   end
 
@@ -320,7 +325,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {}, -- terminal attributes :P
+      attributes = {}, -- terminal attributes
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false,
       gpu = proxy,
@@ -337,7 +342,9 @@ do
     for _, keyboard in pairs(component.invoke(screen, "getKeyboards")) do
       new.keyboards[keyboard] = true
     end
-    k.event.register("key_down", function(...)return new:key_down(...)end)
+    new.key_handler_id = k.event.register("key_down", function(...)
+      return new:key_down(...)
+    end)
     return new
   end
 end

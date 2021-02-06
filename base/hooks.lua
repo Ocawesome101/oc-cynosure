@@ -3,8 +3,8 @@
 k.log(k.loglevels.info, "base/hooks")
 
 do
-  k.hooks = {}
   local hooks = {}
+  k.hooks = {}
   function k.hooks.add(name, func)
     checkArg(1, name, "string")
     checkArg(2, func, "function")
