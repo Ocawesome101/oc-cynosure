@@ -69,5 +69,13 @@ do
     return setmetatable(shadow, copy_mt)
   end
 
+  function util.to_hex(str)
+    local ret = ""
+    for char in str:gmatch(".") do
+      ret = string.format("%s%02x", ret, string.byte(char))
+    end
+    return ret
+  end
+
   k.util = util
 end

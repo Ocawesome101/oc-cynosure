@@ -10,6 +10,8 @@ do
     math = math,
     string = string,
     table = table,
+    users = k.users,
+    sha3 = k.sha3,
     unicode = unicode
   }
   package.loaded = loaded
