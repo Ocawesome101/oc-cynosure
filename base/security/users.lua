@@ -7,7 +7,17 @@ k.log(k.loglevels.info, "base/security/users")
 do
   local api = {}
 
-  local passwd = {}
+  -- default root data so we can at least run init as root
+  -- init should overwrite this with `users.prime()` later on
+  -- but for now this will suffice
+  local passwd = {
+    [0] = {
+      name = "root",
+      home = "/root",
+      shell = "/bin/rc",
+      acls = 8191
+    }
+  }
 
   function api.prime(data)
     checkArg(1, data, "table")
@@ -60,5 +70,5 @@ do
     }
   end
 
-  k.users = api
+  k.security.users = api
 end

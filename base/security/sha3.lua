@@ -1,4 +1,4 @@
-kio.dmesg(kio.loglevels.INFO, "ksrc/misc/sha3.lua")
+k.log(k.loglevels.info, "base/security/sha3.lua")
 
 do
 -- sha3 / keccak
