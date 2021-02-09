@@ -322,14 +322,22 @@ do
       return nil, err
     end
     path = clean(path)
+    if path == "" then path = "/" end
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
-    local pnode, err, rpath = resolve(root)
+    local pnode, err, rpath
+    if path == "/" then
+      pnode, err, rpath = faux, nil, ""
+      fname = ""
+    else
+      pnode, err, rpath = resolve(root)
+    end
     if not pnode then
       return nil, err
     end
     local full = clean(string.format("%s/%s", rpath, fname))
+    if full == "" then full = "/" end
     if type(node) == "string" then
       pnode.children[full] = node
     else

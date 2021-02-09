@@ -150,11 +150,13 @@ do
         self.gpu.setForeground(self.fg)
       elseif n == 39 then
         self.fg = colors[8]
+        self.gpu.setForeground(self.fg)
       elseif n > 39 and n < 48 then
         self.bg = colors[n - 39]
         self.gpu.setBackground(self.bg)
       elseif n == 49 then
         self.bg = colors[1]
+        self.gpu.setBackground(self.bg)
       end
     end
   end

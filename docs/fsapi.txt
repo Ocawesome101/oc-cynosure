@@ -18,7 +18,7 @@ Partition table objects MUST expose the following methods.  All methods must ret
   - `pt:list(): table`
     o Returns a list of partitions where `list[n] = { start_sector = number, end_sector = number }`.
   - `pt:partition(index:number): <drive component proxy>`
-    o Should return an emulated `drive` component, limited to the constraints of the specified partition index.
+    o Should return an emulated `drive` component, limited to the constraints of the specified partition index.  This emulated component must at least have `readSector`, `writeSector`, `getLabel`, and the field `address`.
 
 Filesystem objects MUST have the following methods.  All methods must return `nil` and an error message on failure, and `true` on success unless otherwise specified here.
   - `fs:stat(file:string): table`

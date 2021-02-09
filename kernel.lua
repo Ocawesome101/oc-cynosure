@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.02.08"
+  k._VERSION = "2021.02.09"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -193,11 +193,13 @@ do
         self.gpu.setForeground(self.fg)
       elseif n == 39 then
         self.fg = colors[8]
+        self.gpu.setForeground(self.fg)
       elseif n > 39 and n < 48 then
         self.bg = colors[n - 39]
         self.gpu.setBackground(self.bg)
       elseif n == 49 then
         self.bg = colors[1]
+        self.gpu.setBackground(self.bg)
       end
     end
   end
@@ -837,7 +839,17 @@ end
 do
   local api = {}
 
-  local passwd = {}
+  -- default root data so we can at least run init as root
+  -- init should overwrite this with `users.prime()` later on
+  -- but for now this will suffice
+  local passwd = {
+    [0] = {
+      name = "root",
+      home = "/root",
+      shell = "/bin/rc",
+      acls = 8191
+    }
+  }
 
   function api.prime(data)
     checkArg(1, data, "table")
@@ -890,7 +902,7 @@ do
     }
   end
 
-  k.users = api
+  k.security.users = api
 end
 
 
@@ -899,12 +911,49 @@ end
 k.log(k.loglevels.info, "base/security/access_control")
 
 do
+  -- this implementation of ACLs is fairly basic.
+  -- it only supports boolean on-off permissions rather than, say,
+  -- allowing users only to log on at certain times of day.
   local permissions = {
-    CAN_SUDO = 1
+    user = {
+      CAN_SUDO = 1,
+      CAN_MOUNT = 2,
+      OPEN_UNOWNED = 4,
+    },
+    file = {
+      OWNER_READ = 1,
+      OWNER_WRITE = 2,
+      OWNER_EXEC = 4,
+      GROUP_READ = 8,
+      GROUP_WRITE = 16,
+      GROUP_EXEC = 32,
+      OTHER_READ = 64,
+      OTHER_WRITE = 128,
+      OTHER_EXEC = 256
+    }
+    
   }
   local acl = {}
 
-  k.acl = {}
+  acl.permissions = permissions
+
+  function acl.user_has_permission(uid, permission)
+    checkArg(1, uid, "string")
+    checkArg(2, permission, "number")
+    local attributes, err = k.users.attributes(uid)
+    if not attributes then
+      return nil, err
+    end
+    return acl.has_permission(attributes.acls, permission)
+  end
+
+  function acl.has_permission(perms, permission)
+    checkArg(1, perms, "number")
+    checkArg(2, permission, "number")
+    return perms & permission ~= 0
+  end
+
+  k.security.acl = acl
 end
 
 
@@ -1250,31 +1299,54 @@ do
 
   local mounts = {}
 
-  function fs.api.mount(node, path)
-    checkArg(1, node, "string")
+  fs.api.types = {
+    RAW = 0,
+    NODE = 1,
+    OVERLAY = 2,
+  }
+  function fs.api.mount(node, fstype, path)
+    checkArg(1, node, "string", "table")
+    checkArg(2, fstype, "number")
     checkArg(2, path, "string")
-    local device, err
+    local device, err = node
+    if fstype ~= fs.api.types.RAW then
+      -- TODO: properly check object methods first
+      goto skip
+    end
     if k.sysfs then
       local sdev, serr = k.sysfs.resolve_device(node)
       if not sdev then return nil, serr end
-      device, err = fs.get_filesystem_driver(node)
-    else
+      device, err = fs.get_filesystem_driver(sdev)
+    elseif type(node) ~= "string" then
       device, err = fs.get_filesystem_driver(node)
     end
+    ::skip::
     if not device then
       return nil, err
     end
     path = clean(path)
+    if path == "" then path = "/" end
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
-    local node, err, rpath = resolve(root)
-    if not node then
+    local pnode, err, rpath
+    if path == "/" then
+      pnode, err, rpath = faux, nil, ""
+      fname = ""
+    else
+      pnode, err, rpath = resolve(root)
+    end
+    if not pnode then
       return nil, err
     end
     local full = clean(string.format("%s/%s", rpath, fname))
-    node.children[full] = rpath
-    mounts[path] = device.node.getLabel() or "unknown"
+    if full == "" then full = "/" end
+    if type(node) == "string" then
+      pnode.children[full] = node
+    else
+      pnode.children[full] = {node=device, children={}}
+      mounts[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
+    end
     return true
   end
 
@@ -1984,6 +2056,80 @@ end
 -- load init, i guess
 
 k.log(k.loglevels.info, "base/load_init")
+
+-- we need to mount the root filesystem first
+do
+  local root, reftype = nil, "UUID"
+  if k.cmdline.root then
+    local rtype, ref = k.cmdline.root:match("^(.-)=(.+)$")
+    reftype = rtype:upper() or "UUID"
+    root = ref or k.cmdline.root
+  elseif not computer.getBootAddress then
+    if not k.logio then
+      -- we have no logger output, resort to desparate measures
+      -- GOODBYE CRUEL WORLD
+      error("cannot determine root filesystem")
+    end
+    -- still error, slightly less hard
+    k.panic("Cannot determine root filesystem!")
+  else
+    k.log(k.loglevels.warn, "\27[41;37mWARNING\27[39;49m use of computer.getBootAddress to detect the root filesystem is discouraged.")
+    k.log(k.loglevels.warn, "\27[41;37mWARNING\27[39;49m specify root=UUID=<address> on the kernel command line to suppress this message.")
+    root = computer.getBootAddress()
+    reftype = "UUID"
+  end
+  local ok, err
+  if reftype ~= "LABEL" then
+    if reftype ~= "UUID" then
+      k.log(k.loglevels.warn, "invalid rootspec type (expected LABEL or UUID, got ", reftype, ") - assuming UUID")
+    end
+    if not component.list("filesystem")[root] then
+      for k, v in component.list("drive", true) do
+        local ptable = k.fs.get_partition_table_driver(k)
+        if ptable then
+          for i=1, #ptable:list(), 1 do
+            local part = ptable:partition(i)
+            if part and (part.address == root) then
+              root = part
+              break
+            end
+          end
+        end
+      end
+    end
+    ok, err = k.fs.api.mount(root, k.fs.api.types.RAW, "/")
+  elseif reftype == "LABEL" then
+    local comp
+    for k, v in component.list() do
+      if v == "filesystem" then
+        if component.invoke(k, "getLabel") == root then
+          comp = root
+          break
+        end
+      elseif v == "drive" then
+        local ptable = k.fs.get_partition_table_driver(k)
+        if ptable then
+          for i=1, #ptable:list(), 1 do
+            local part = ptable:partition(i)
+            if part then
+              if part.getLabel() == root then
+                comp = part
+                break
+              end
+            end
+          end
+        end
+      end
+    end
+    if not comp then
+      k.panic("Could not determine root filesystem from root=", k.cmdline.root)
+    end
+    ok, err = k.fs.api.mount(comp, k.fs.api.types.RAW, "/")
+  end
+  if not ok then
+    k.panic(err)
+  end
+end
 
 do
   k.log(k.loglevels.info, "Creating userspace sandbox")
