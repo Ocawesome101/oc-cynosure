@@ -259,6 +259,29 @@ do
       return nil, err
     end
     mode = mode or "r"
+    local data = node.node:stat(path)
+    local user = (k.scheduler.info() or {owner=0}).owner
+    -- TODO: groups
+    if data.owner ~= user and not k.acl.user_has_permission(user,
+                            k.acl.permissions.user.OPEN_UNOWNED) then
+      return nil, "permission denied"
+    else
+      local perms = k.acl.permissions.file
+      local rperm, wperm
+      if data.owner ~= user then
+        rperm = perms.OTHER_READ
+        wperm = perms.OTHER_WRITE
+      else
+        rperm = perms.OWNER_READ
+        wperm = perms.OWNER_WRITE
+      end
+      if (mode == "r" and not
+        k.acl.has_permissions(data.permissions, rperm)) or
+        ((mode == "w" or mode == "a") and not
+        k.acl.has_permission(data.permissions, wperm)) then
+        return nil, "permission denied"
+      end
+    end
     return node.node:open(path, mode)
   end
 
@@ -353,16 +376,21 @@ do
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
-    local node, err, path = resolve(root)
+    local node, err, rpath = resolve(root)
     if not node then
       return nil, err
     end
-    local full = clean(strint.format("%s/%s", path, fname))
-    node.children[path] = nil
+    local full = clean(string.format("%s/%s", rpath, fname))
+    node.children[full] = nil
+    mounts[path] = nil
     return true
   end
 
   function fs.api.mounts()
+    local new = {}
+    -- prevent programs from meddling with these
+    for k,v in pairs(mounts) do new[k] = v end
+    return new
   end
 
   k.fs = fs
