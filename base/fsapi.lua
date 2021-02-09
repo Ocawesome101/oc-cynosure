@@ -296,17 +296,28 @@ do
 
   local mounts = {}
 
-  function fs.api.mount(node, path)
-    checkArg(1, node, "string")
+  fs.api.types = {
+    RAW = 0,
+    NODE = 1,
+    OVERLAY = 2,
+  }
+  function fs.api.mount(node, fstype, path)
+    checkArg(1, node, "string", "table")
+    checkArg(2, fstype, "number")
     checkArg(2, path, "string")
-    local device, err
+    local device, err = node
+    if fstype ~= fs.api.types.RAW then
+      -- TODO: properly check object methods first
+      goto skip
+    end
     if k.sysfs then
       local sdev, serr = k.sysfs.resolve_device(node)
       if not sdev then return nil, serr end
-      device, err = fs.get_filesystem_driver(node)
-    else
+      device, err = fs.get_filesystem_driver(sdev)
+    elseif type(node) ~= "string" then
       device, err = fs.get_filesystem_driver(node)
     end
+    ::skip::
     if not device then
       return nil, err
     end
@@ -314,13 +325,17 @@ do
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
-    local node, err, rpath = resolve(root)
-    if not node then
+    local pnode, err, rpath = resolve(root)
+    if not pnode then
       return nil, err
     end
     local full = clean(string.format("%s/%s", rpath, fname))
-    node.children[full] = rpath
-    mounts[path] = device.node.getLabel() or "unknown"
+    if type(node) == "string" then
+      pnode.children[full] = node
+    else
+      pnode.children[full] = {node=device, children={}}
+      mounts[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
+    end
     return true
   end
 

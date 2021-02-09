@@ -2,6 +2,10 @@
 
 k.log(k.loglevels.info, "base/load_init")
 
+-- we need to mount the root filesystem first
+do
+end
+
 do
   k.log(k.loglevels.info, "Creating userspace sandbox")
   local sbox = k.util.copy(_G)
