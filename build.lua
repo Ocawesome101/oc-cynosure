@@ -29,7 +29,3 @@ handle:close()
 
 os.execute("./luacomp init.lua -Okernel.lua")
 os.remove("includes.lua")
-
-if args[1] == "ocvm" then
-  os.execute("ocvm ../..")
-end
