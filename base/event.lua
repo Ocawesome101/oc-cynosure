@@ -13,7 +13,7 @@ do
     if sig.n == 0 then return nil end
     for k, v in pairs(handlers) do
       if v.signal == sig[1] then
-        v.callback()
+        v.callback(table.unpack(sig))
       end
     end
     return table.unpack(sig)

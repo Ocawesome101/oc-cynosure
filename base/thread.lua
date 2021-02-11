@@ -29,6 +29,10 @@ do
     return old_coroutine.resume(self.__thread, ...)
   end
 
+  function _coroutine:status()
+    return old_coroutine.status(self.__thread)
+  end
+
   setmetatable(_coroutine, {
     __index = function(t, k)
       if k.scheduler then

@@ -312,7 +312,7 @@ do
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    if self.attributes.raw and self.echo then
+    if self.echo then
       local ch = signal[3]
       if #char == 1 then
         char = ("^" .. string.char(
@@ -329,9 +329,9 @@ do
     else
       if char == "\13" then char = "\n"
       elseif char == "\8" then self:write("\8 \8") end
-    end
-    if self.echo then
-      self:write(char)
+      if self.echo then
+        self:write(char)
+      end
     end
     self.rb = string.format("%s%s", self.rb, char)
   end
@@ -410,7 +410,7 @@ do
     if sig.n == 0 then return nil end
     for k, v in pairs(handlers) do
       if v.signal == sig[1] then
-        v.callback()
+        v.callback(table.unpack(sig))
       end
     end
     return table.unpack(sig)
@@ -1843,6 +1843,10 @@ do
     return old_coroutine.resume(self.__thread, ...)
   end
 
+  function _coroutine:status()
+    return old_coroutine.status(self.__thread)
+  end
+
   setmetatable(_coroutine, {
     __index = function(t, k)
       if k.scheduler then
@@ -1978,10 +1982,10 @@ do
   function api.spawn(args)
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
-    local parent = current
+    local parent = current or {}
     local new = k.create_process {
       name = args.name,
-      parent = parent.pid,
+      parent = parent.pid or 0,
       stdin = parent.stdin or args.stdin,
       stdout = parent.stdout or args.stdout,
       input = args.input,
@@ -2031,6 +2035,7 @@ do
     processes[proc] = nil
   end
 
+  local pullSignal = computer.pullSignal
   function api.loop()
     while processes[1] do
       local to_run = {}
@@ -2189,6 +2194,15 @@ do
   if not ok then
     k.panic(err)
   end
+  k.scheduler.spawn {
+    name = "init",
+    func = ok,
+    input = k.logio,
+    output = k.logio
+  }
+
+  k.log(k.loglevels.info, "Starting scheduler loop")
+  k.scheduler.loop()
 end
 
 k.panic("Premature exit!")

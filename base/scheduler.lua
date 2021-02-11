@@ -11,10 +11,10 @@ do
   function api.spawn(args)
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
-    local parent = current
+    local parent = current or {}
     local new = k.create_process {
       name = args.name,
-      parent = parent.pid,
+      parent = parent.pid or 0,
       stdin = parent.stdin or args.stdin,
       stdout = parent.stdout or args.stdout,
       input = args.input,
@@ -64,6 +64,7 @@ do
     processes[proc] = nil
   end
 
+  local pullSignal = computer.pullSignal
   function api.loop()
     while processes[1] do
       local to_run = {}

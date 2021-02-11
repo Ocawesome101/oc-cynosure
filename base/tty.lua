@@ -269,7 +269,7 @@ do
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    if self.attributes.raw and self.echo then
+    if self.echo then
       local ch = signal[3]
       if #char == 1 then
         char = ("^" .. string.char(
@@ -286,9 +286,9 @@ do
     else
       if char == "\13" then char = "\n"
       elseif char == "\8" then self:write("\8 \8") end
-    end
-    if self.echo then
-      self:write(char)
+      if self.echo then
+        self:write(char)
+      end
     end
     self.rb = string.format("%s%s", self.rb, char)
   end

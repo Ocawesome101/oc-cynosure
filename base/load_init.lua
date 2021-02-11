@@ -90,4 +90,13 @@ do
   if not ok then
     k.panic(err)
   end
+  k.scheduler.spawn {
+    name = "init",
+    func = ok,
+    input = k.logio,
+    output = k.logio
+  }
+
+  k.log(k.loglevels.info, "Starting scheduler loop")
+  k.scheduler.loop()
 end
