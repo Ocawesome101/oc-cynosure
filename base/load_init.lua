@@ -74,6 +74,7 @@ do
   if not ok then
     k.panic(err)
   end
+  k.log(k.loglevels.info, "Mounted root filesystem")
 end
 
 do

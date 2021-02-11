@@ -51,20 +51,22 @@ do
 
   local faux = {children = mounts}
   local resolving = {}
-  local resolve = function(path)
+  local resolve
+  resolve = function(path)
     if resolving[path] then
       return nil, "recursive mount detected"
     end
-    resolving[path] = true
     path = clean(path)
+    resolving[path] = true
     local current, parent = faux
-    if not current.children["/"] then
+    if not mounts["/"] then
       return nil, "root filesystem is not mounted!"
     end
     if current.children[path] then
       return current.children[path]
     end
     local segments = split(path)
+    table.insert(segments, 1, "/")
     local base_n = 1 -- we may have to traverse multiple mounts
     for i=1, #segments, 1 do
       local try = table.concat(segments, "/", base_n, i)
@@ -81,7 +83,7 @@ do
         end
         parent = current
         current = next_node
-      else
+      elseif not current.node:stat(try) then
         resolving[path] = false
         return nil, fs.errors.file_not_found
       end
@@ -97,6 +99,13 @@ do
   local registered = {partition_tables = {}, filesystems = {}}
 
   local _managed = {}
+  function _managed:info()
+    return {
+      read_only = self.node.isReadOnly(),
+      address = self.node.address
+    }
+  end
+
   function _managed:stat(file)
     if not self.node.exists(file) then
       return nil, fs.errors.file_not_found
@@ -262,11 +271,11 @@ do
     local data = node.node:stat(path)
     local user = (k.scheduler.info() or {owner=0}).owner
     -- TODO: groups
-    if data.owner ~= user and not k.acl.user_has_permission(user,
-                            k.acl.permissions.user.OPEN_UNOWNED) then
+    if data.owner ~= user and not k.security.acl.user_has_permission(user,
+                            k.security.acl.permissions.user.OPEN_UNOWNED) then
       return nil, "permission denied"
     else
-      local perms = k.acl.permissions.file
+      local perms = k.security.acl.permissions.file
       local rperm, wperm
       if data.owner ~= user then
         rperm = perms.OTHER_READ
@@ -276,9 +285,9 @@ do
         wperm = perms.OWNER_WRITE
       end
       if (mode == "r" and not
-        k.acl.has_permissions(data.permissions, rperm)) or
+        k.security.acl.has_permission(data.permissions, rperm)) or
         ((mode == "w" or mode == "a") and not
-        k.acl.has_permission(data.permissions, wperm)) then
+        k.security.acl.has_permission(data.permissions, wperm)) then
         return nil, "permission denied"
       end
     end
@@ -317,7 +326,7 @@ do
     return node.node:remove(file)
   end
 
-  local mounts = {}
+  local mounted = {}
 
   fs.api.types = {
     RAW = 0,
@@ -337,7 +346,7 @@ do
       local sdev, serr = k.sysfs.resolve_device(node)
       if not sdev then return nil, serr end
       device, err = fs.get_filesystem_driver(sdev)
-    elseif type(node) ~= "string" then
+    else
       device, err = fs.get_filesystem_driver(node)
     end
     ::skip::
@@ -351,8 +360,8 @@ do
     fname = fname or path
     local pnode, err, rpath
     if path == "/" then
-      pnode, err, rpath = faux, nil, ""
-      fname = ""
+      mounts["/"] = {node = device, children = {}}
+      return true
     else
       pnode, err, rpath = resolve(root)
     end
@@ -365,7 +374,7 @@ do
       pnode.children[full] = node
     else
       pnode.children[full] = {node=device, children={}}
-      mounts[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
+      mounted[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
     end
     return true
   end
@@ -382,14 +391,14 @@ do
     end
     local full = clean(string.format("%s/%s", rpath, fname))
     node.children[full] = nil
-    mounts[path] = nil
+    mounted[path] = nil
     return true
   end
 
   function fs.api.mounts()
     local new = {}
     -- prevent programs from meddling with these
-    for k,v in pairs(mounts) do new[k] = v end
+    for k,v in pairs(mounted) do new[k] = v end
     return new
   end
 

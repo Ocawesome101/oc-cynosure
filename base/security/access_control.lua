@@ -30,9 +30,9 @@ do
   acl.permissions = permissions
 
   function acl.user_has_permission(uid, permission)
-    checkArg(1, uid, "string")
+    checkArg(1, uid, "number")
     checkArg(2, permission, "number")
-    local attributes, err = k.users.attributes(uid)
+    local attributes, err = k.security.users.attributes(uid)
     if not attributes then
       return nil, err
     end

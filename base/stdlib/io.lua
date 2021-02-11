@@ -23,7 +23,7 @@ do
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
     mode = mode or "r"
-    local handle, err = fs.open(file)
+    local handle, err = fs.open(file, mode)
     if not handle then
       return nil, err
     end

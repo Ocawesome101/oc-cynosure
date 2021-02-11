@@ -6,26 +6,30 @@ do
   local buffer = {}
   function buffer:read_byte()
     if self.buffer_mode ~= "none" then
-      if #self.read_buffer == 0 then
-        self.read_buffer = self.stream:read(self.buffer_size)
+      if (not self.read_buffer) or #self.read_buffer == 0 then
+        self.read_buffer = self.base:read(self.buffer_size)
       end
-      local dat = self.read_buffer:sub(-1)
-      self.read_buffer = self.read_buffer:sub(1, -2)
+      if not self.read_buffer then
+        self.closed = true
+        return nil
+      end
+      local dat = self.read_buffer:sub(1,1)
+      self.read_buffer = self.read_buffer:sub(2, -1)
       return dat
     else
-      return self.stream:read(1)
+      return self.base:read(1)
     end
   end
 
   function buffer:write_byte(byte)
     if self.buffer_mode ~= "none" then
       if #self.write_buffer >= self.buffer_size then
-        self.stream:write(self.write_buffer)
+        self.base:write(self.write_buffer)
         self.write_buffer = ""
       end
       self.write_buffer = string.format("%s%s", self.write_buffer, byte)
     else
-      return self.stream:write(byte)
+      return self.base:write(byte)
     end
     return true
   end
@@ -92,7 +96,7 @@ do
     local args = table.pack(...)
     local read = {}
     for i=1, args.n, 1 do
-      read[i] = buffer:read_formatted(args[i])
+      read[i] = self:read_formatted(args[i])
     end
     return table.unpack(read)
   end
@@ -129,7 +133,7 @@ do
       return nil, "bad file descriptor"
     end
     self:flush()
-    return self.stream:seek()
+    return self.base:seek()
   end
 
   function buffer:flush()
@@ -137,7 +141,7 @@ do
       return nil, "bad file descriptor"
     end
     if #self.write_buffer > 0 then
-      self.stream:write(self.write_buffer)
+      self.base:write(self.write_buffer)
       self.write_buffer = ""
     end
     return true
@@ -153,8 +157,10 @@ do
     __name = "FILE*"
   }
   function k.create_fstream(base, mode)
+    checkArg(1, base, "table")
+    checkArg(2, mode, "string")
     local new = {
-      stream = base,
+      base = base,
       buffer_size = 512,
       read_buffer = "",
       write_buffer = "",
@@ -165,6 +171,7 @@ do
     for c in mode:gmatch(".") do
       new.mode[c] = true
     end
-    return setmetatable(new, fmt)
+    setmetatable(new, fmt)
+    return new
   end
 end
