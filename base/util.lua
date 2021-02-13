@@ -40,9 +40,11 @@ do
     return setmetatable(new, mt)
   end
 
-  -- create memory-friendly copies of tables
-  -- uses metatable weirdness
-  -- this is a bit like util.protect
+  -- create hopefully memory-friendly copies of tables
+  -- uses metatable magic
+  -- this is a bit like util.protect except tables are still writable
+  -- even i still don't fully understand how this works, but it works
+  -- nonetheless
   function util.copy(tbl)
     if type(tbl) ~= "table" then return tbl end
     local shadow = {}
