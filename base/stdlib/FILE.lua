@@ -119,6 +119,10 @@ do
       args[i] = tostring(args[i])
       write = string.format("%s%s", write, args[i])
     end
+    if self.buffer_mode == "none" then
+      -- a-ha! performance shortcut!
+      return self.base:write(write)
+    end
     for i=1, #write, 1 do
       local char = write:sub(i,i)
       self:write_byte(char)

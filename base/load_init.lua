@@ -90,11 +90,13 @@ do
   if not ok then
     k.panic(err)
   end
+  local ios = k.create_fstream(k.logio, "rw")
+  ios.buffer_mode = "none"
   k.scheduler.spawn {
     name = "init",
     func = ok,
-    input = k.logio,
-    output = k.logio
+    input = ios,
+    output = ios
   }
 
   k.log(k.loglevels.info, "Starting scheduler loop")

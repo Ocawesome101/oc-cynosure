@@ -17,6 +17,7 @@ do
         self.threads[k] = nil
         if not result[1] then
           self:push_signal("thread_died", v.id)
+          return nil, result[2]
         end
       end
     end

@@ -48,7 +48,7 @@ do
     local shadow = {}
     local copy_mt = {
       __index = function(_, k)
-        local item = shadow[k] or tbl[k]
+        local item = rawget(shadow, k) or rawget(tbl, k)
         return util.copy(item)
       end,
       __pairs = function()

@@ -269,10 +269,14 @@ do
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    if self.echo then
+    if self.attributes.echo then
       local ch = signal[3]
-      if #char == 1 then
-        char = ("^" .. string.char(
+      local tw
+      if #char == 1 and ch == 0 then
+        char = ""
+        tw = ""
+      elseif #char == 1 and ch < 32 then
+        local tch = string.char(
             (ch == 0 and 32) or
             (ch < 27 and ch + 96) or
             (ch == 27 and "[") or
@@ -281,12 +285,15 @@ do
             (ch == 30 and "~") or
             (ch == 31 and "?") or ch
           ):upper()
-        )
+        tw = "^" .. tch
+        char = "\27[" .. tch
       end
-    else
-      if char == "\13" then char = "\n"
-      elseif char == "\8" then self:write("\8 \8") end
-      if self.echo then
+      if ch == 13 then char = "\n"
+      elseif ch == 8 then
+        tw = ("\27[D \27[D")
+        char = ""
+        self.rb = self.rb:sub(1, -1) end
+      if self.attributes.echo then
         self:write(char)
       end
     end
@@ -294,6 +301,7 @@ do
   end
   
   function _stream:read(n)
+    n = n or 0
     repeat
       coroutine.yield()
     until #self.rb >= n and ((not self.attributes.line) or
@@ -327,7 +335,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {}, -- terminal attributes
+      attributes = {echo=true,raw=false}, -- terminal attributes
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false,
       gpu = proxy,

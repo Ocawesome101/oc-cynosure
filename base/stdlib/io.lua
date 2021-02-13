@@ -53,13 +53,13 @@ do
     return file:lines(fmt)
   end
 
-  local function stream(k)
+  local function stream(kk)
     return function(v)
       local t = k.scheduler.info().data.io
       if v then
-        t[k] = v
+        t[kk] = v
       end
-      return t[k]
+      return t[kk]
     end
   end
 

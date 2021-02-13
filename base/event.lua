@@ -11,7 +11,7 @@ do
     checkArg(1, timeout, "number", "nil")
     local sig = table.pack(pull(timeout))
     if sig.n == 0 then return nil end
-    for k, v in pairs(handlers) do
+    for _, v in pairs(handlers) do
       if v.signal == sig[1] then
         v.callback(table.unpack(sig))
       end

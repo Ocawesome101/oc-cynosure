@@ -28,9 +28,8 @@ do
 
   function api.info(pid)
     checkArg(1, pid, "number", "nil")
-    local proc
-    if pid then proc = processes[pid]
-    else proc = current end
+    pid = pid or current
+    local proc = processes[pid]
     if not proc then
       return nil, "no such process"
     end
@@ -43,7 +42,7 @@ do
       status = proc:status(),
       cputime = proc.cputime
     }
-    if proc.pid == current.pid then
+    if proc.pid == current then
       info.data = {
         push_signal = proc.push_signal,
         pull_signal = proc.pull_signal,
@@ -94,11 +93,12 @@ do
       end
       for i, proc in ipairs(to_run) do
         local psig = sig
-        local start_time = computer.uptime()
+        current = i
         if #proc.queue > 0 then -- the process has queued signals
           proc:push_signal(table.unpack(sig))
           psig = proc:pull_signal()
         end
+        local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
         if ok == "__internal_process_exit" or not ok then
           local exit = err or 0
@@ -109,6 +109,7 @@ do
             err = "exited"
           end
           err = err or "died"
+          k.log(k.loglevels.warn, "process died: ", proc.pid, exit, err)
           computer.pushSignal("process_died", proc.pid, exit, err)
           for k, v in pairs(proc.handles) do
             pcall(v.close, v)
@@ -116,6 +117,7 @@ do
           processes[proc.pid] = nil
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time
+          proc.deadline = computer.uptime() + (tonumber(ok) or math.huge)
         end
       end
     end
