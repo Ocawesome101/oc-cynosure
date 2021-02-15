@@ -80,6 +80,7 @@ do
           break
         end
       end
+      --k.log(k.loglevels.info, min_timeout)
       local sig = table.pack(pullSignal(min_timeout))
       for k, v in pairs(processes) do
         if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
@@ -100,6 +101,7 @@ do
         end
         local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
+        k.log(k.loglevels.info, ok, err)
         if ok == "__internal_process_exit" or not ok then
           local exit = err or 0
           if type(err) == "string" then

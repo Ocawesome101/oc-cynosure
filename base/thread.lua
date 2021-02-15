@@ -9,7 +9,9 @@ do
   function _coroutine.create(func)
     checkArg(1, func, "function")
     return setmetatable({
-      __thread = old_coroutine.create(func)
+      __thread = old_coroutine.create(function()
+        return select(2, assert(xpcall(func, debug.traceback)))
+      end)
     },
     {
       __index = _coroutine,
