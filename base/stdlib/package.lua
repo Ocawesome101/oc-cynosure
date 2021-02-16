@@ -86,4 +86,13 @@ do
     end
     return ret
   end
+
+  k.hooks.add("sandbox", function()
+    k.usb.k = nil
+    local function wrap(f, p)
+      return function(...)
+        if not k.security.acl.user_has_permission(p)
+      end
+    end
+  end)
 end

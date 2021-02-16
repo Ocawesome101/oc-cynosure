@@ -35,23 +35,7 @@ do
     return old_coroutine.status(self.__thread)
   end
 
-  setmetatable(_coroutine, {
-    __index = function(t, k)
-      if k.scheduler then
-        local process = k.scheduler.info()
-        if process.data.coroutine[k] then
-          return process.data.coroutine[k]
-        end
-      end
-      return old_coroutine[k]
-    end,
-    __pairs = function()
-      -- build iterable table
-      local iter = k.util.merge_tables(old_coroutine,
-                      _coroutine,
-                      (k.scheduler and k.scheduler.info().data.coroutine or {}))
-      return pairs(iter)
-    end,
-    __metatable = {}
-  })
+  for k,v in pairs(old_coroutine) do
+    _coroutine[k] = _coroutine[k] or v
+  end
 end

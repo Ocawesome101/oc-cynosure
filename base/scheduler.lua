@@ -18,7 +18,8 @@ do
       stdin = parent.stdin or args.stdin,
       stdout = parent.stdout or args.stdout,
       input = args.input,
-      output = args.output
+      output = args.output,
+      owner = parent.owner or 0,
     }
     new:add_thread(args.func)
     processes[new.pid] = new

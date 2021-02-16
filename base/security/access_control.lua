@@ -11,6 +11,7 @@ do
       CAN_SUDO = 1,
       CAN_MOUNT = 2,
       OPEN_UNOWNED = 4,
+      COMPONENTS = 8,
     },
     file = {
       OWNER_READ = 1,

@@ -45,30 +45,59 @@ do
   -- this is a bit like util.protect except tables are still writable
   -- even i still don't fully understand how this works, but it works
   -- nonetheless
-  function util.copy(tbl)
-    if type(tbl) ~= "table" then return tbl end
-    local shadow = {}
-    local copy_mt = {
-      __index = function(_, k)
-        local item = rawget(shadow, k) or rawget(tbl, k)
-        return util.copy(item)
-      end,
-      __pairs = function()
-        local iter = {}
-        for k, v in pairs(tbl) do
-          iter[k] = util.copy(v)
+  if computer.totalMemory() <= 262144 then
+    -- if we have 256k or less memory, use the mem-friendly function
+    function util.copy(tbl)
+      if type(tbl) ~= "table" then return tbl end
+      local shadow = {}
+      local copy_mt = {
+        __index = function(_, k)
+          local item = rawget(shadow, k) or rawget(tbl, k)
+          return util.copy(item)
+        end,
+        __pairs = function()
+          local iter = {}
+          for k, v in pairs(tbl) do
+            iter[k] = util.copy(v)
+          end
+          for k, v in pairs(shadow) do
+            iter[k] = v
+          end
+          return pairs(iter)
         end
-        for k, v in pairs(shadow) do
-          iter[k] = v
+        -- no __metatable: leaving this metatable exposed isn't a huge
+        -- deal, since there's no way to access `tbl` for writing using any
+        -- of the functions in it.
+      }
+      copy_mt.__ipairs = copy_mt.__pairs
+      return setmetatable(shadow, copy_mt)
+    end
+  else
+    -- from https://lua-users.org/wiki/CopyTable
+    local function deepcopy(orig, copies)
+      copies = copies or {}
+      local orig_type = type(orig)
+      local copy
+      if orig_type == 'table' then
+        if copies[orig] then
+          copy = copies[orig]
+        else
+          copy = {}
+          copies[orig] = copy
+          for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
+          end
+          setmetatable(copy, deepcopy(getmetatable(orig), copies))
         end
-        return pairs(iter)
+      else -- number, string, boolean, etc
+        copy = orig
       end
-      -- no __metatable: leaving this metatable exposed isn't a huge
-      -- deal, since there's no way to access `tbl` for writing using any
-      -- of the functions in it.
-    }
-    copy_mt.__ipairs = copy_mt.__pairs
-    return setmetatable(shadow, copy_mt)
+      return copy
+    end
+
+    function util.copy_table(t)
+      return deepcopy(t)
+    end
   end
 
   function util.to_hex(str)

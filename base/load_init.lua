@@ -18,8 +18,8 @@ do
     -- still error, slightly less hard
     k.panic("Cannot determine root filesystem!")
   else
-    k.log(k.loglevels.warn, "\27[41;37mWARNING\27[39;49m use of computer.getBootAddress to detect the root filesystem is discouraged.")
-    k.log(k.loglevels.warn, "\27[41;37mWARNING\27[39;49m specify root=UUID=<address> on the kernel command line to suppress this message.")
+    k.log(k.loglevels.warn, "\27[101;97mWARNING\27[39;49m use of computer.getBootAddress to detect the root filesystem is discouraged.")
+    k.log(k.loglevels.warn, "\27[101;97mWARNING\27[39;49m specify root=UUID=<address> on the kernel command line to suppress this message.")
     root = computer.getBootAddress()
     reftype = "UUID"
   end

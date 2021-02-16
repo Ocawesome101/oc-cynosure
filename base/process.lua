@@ -75,8 +75,6 @@ do
       handles = {},
       cputime = 0,
       deadline = 0,
-      coroutine = {} -- overrides for some coroutine methods
-                     -- potentially used in pipes
     }, proc_mt)
     args.stdin, args.stdout, args.stderr,
                     args.input, args.output = nil, nil, nil
