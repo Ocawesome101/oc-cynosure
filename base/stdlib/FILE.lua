@@ -100,7 +100,6 @@ do
     for i=1, args.n, 1 do
       read[i] = self:read_formatted(args[i])
     end
-    k.log(k.loglevels.info, "BUFFER READ RETURN")
     return table.unpack(read)
   end
 
