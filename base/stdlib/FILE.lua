@@ -52,6 +52,7 @@ do
 
   function buffer:read_formatted(fmt)
     checkArg(1, fmt, "string", "number")
+    --k.log(k.loglevels.info, "FMTREAD", fmt)
     if type(fmt) == "number" then
       local read = ""
       repeat
@@ -94,10 +95,12 @@ do
       return nil, "bad file descriptor"
     end
     local args = table.pack(...)
+    if args.n == 0 then args[1] = "l" args.n = 1 end
     local read = {}
     for i=1, args.n, 1 do
       read[i] = self:read_formatted(args[i])
     end
+    k.log(k.loglevels.info, "BUFFER READ RETURN")
     return table.unpack(read)
   end
 

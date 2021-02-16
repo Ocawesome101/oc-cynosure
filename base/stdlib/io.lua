@@ -90,4 +90,12 @@ do
   end
 
   setmetatable(io, mt)
+
+  function _G.print(...)
+    local args = table.pack(...)
+    for i=1, args.n, 1 do
+      args[i] = tostring(args[i])
+    end
+    return io.write(table.concat(args, "  ", 1, args.n))
+  end
 end

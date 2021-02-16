@@ -101,7 +101,7 @@ do
         end
         local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
-        k.log(k.loglevels.info, ok, err)
+        --k.log(k.loglevels.info, ok, err)
         if ok == "__internal_process_exit" or not ok then
           local exit = err or 0
           if type(err) == "string" then

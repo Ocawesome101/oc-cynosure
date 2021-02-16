@@ -301,13 +301,18 @@ do
   end
   
   function _stream:read(n)
-    n = n or 0
-    repeat
-      coroutine.yield()
-    until #self.rb >= n and ((not self.attributes.line) or
-                                  self.rb:find("\n") >= n)
+    checkArg(1, n, "number")
+    if self.attributes.line then
+      while (not self.rb:find("\n")) or (self.rb:find("\n") < n) do
+        coroutine.yield()
+      end
+    else
+      while #rb < n do
+        coroutine.yield()
+      end
+    end
     local data = self.rb:sub(1, n)
-    self.rb = self.rb:sub(#data + 1)
+    self.rb = self.rb:sub(n + 1)
     return data
   end
 
@@ -335,7 +340,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {echo=true,raw=false}, -- terminal attributes
+      attributes = {echo=true,line=true,raw=false}, -- terminal attributes
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false,
       gpu = proxy,

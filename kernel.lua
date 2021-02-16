@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.02.15"
+  k._VERSION = "2021.02.16"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -344,13 +344,18 @@ do
   end
   
   function _stream:read(n)
-    n = n or 0
-    repeat
-      coroutine.yield()
-    until #self.rb >= n and ((not self.attributes.line) or
-                                  self.rb:find("\n") >= n)
+    checkArg(1, n, "number")
+    if self.attributes.line then
+      while (not self.rb:find("\n")) or (self.rb:find("\n") < n) do
+        coroutine.yield()
+      end
+    else
+      while #rb < n do
+        coroutine.yield()
+      end
+    end
     local data = self.rb:sub(1, n)
-    self.rb = self.rb:sub(#data + 1)
+    self.rb = self.rb:sub(n + 1)
     return data
   end
 
@@ -378,7 +383,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {echo=true,raw=false}, -- terminal attributes
+      attributes = {echo=true,line=true,raw=false}, -- terminal attributes
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false,
       gpu = proxy,
@@ -1476,6 +1481,7 @@ do
 
   function buffer:read_formatted(fmt)
     checkArg(1, fmt, "string", "number")
+    --k.log(k.loglevels.info, "FMTREAD", fmt)
     if type(fmt) == "number" then
       local read = ""
       repeat
@@ -1518,10 +1524,12 @@ do
       return nil, "bad file descriptor"
     end
     local args = table.pack(...)
+    if args.n == 0 then args[1] = "l" args.n = 1 end
     local read = {}
     for i=1, args.n, 1 do
       read[i] = self:read_formatted(args[i])
     end
+    k.log(k.loglevels.info, "BUFFER READ RETURN")
     return table.unpack(read)
   end
 
@@ -1697,6 +1705,14 @@ do
   end
 
   setmetatable(io, mt)
+
+  function _G.print(...)
+    local args = table.pack(...)
+    for i=1, args.n, 1 do
+      args[i] = tostring(args[i])
+    end
+    return io.write(table.concat(args, "  ", 1, args.n))
+  end
 end
 
 
@@ -2089,7 +2105,7 @@ do
         end
         local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
-        k.log(k.loglevels.info, ok, err)
+        --k.log(k.loglevels.info, ok, err)
         if ok == "__internal_process_exit" or not ok then
           local exit = err or 0
           if type(err) == "string" then
