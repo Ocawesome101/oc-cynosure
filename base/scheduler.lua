@@ -41,7 +41,8 @@ do
       deadline = proc.deadline,
       n_threads = #proc.threads,
       status = proc:status(),
-      cputime = proc.cputime
+      cputime = proc.cputime,
+      owner = proc.owner
     }
     if proc.pid == current then
       info.data = {

@@ -8,10 +8,14 @@ do
   -- allowing users only to log on at certain times of day.
   local permissions = {
     user = {
-      CAN_SUDO = 1,
-      CAN_MOUNT = 2,
+      SUDO = 1,
+      MOUNT = 2,
       OPEN_UNOWNED = 4,
       COMPONENTS = 8,
+      HWINFO = 16,
+      SETARCH = 32,
+      MANAGE_USERS = 64,
+      BOOTADDR = 128
     },
     file = {
       OWNER_READ = 1,

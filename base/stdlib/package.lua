@@ -88,11 +88,36 @@ do
   end
 
   k.hooks.add("sandbox", function()
-    k.usb.k = nil
+    k.userspace.k = nil
+    local acl = k.security.acl
+    local perms = acl.permissions
     local function wrap(f, p)
       return function(...)
-        if not k.security.acl.user_has_permission(p)
+        if not acl.user_has_permission(k.scheduler.info().owner,
+            p) then
+          error("permission denied")
+        end
+        return f(...)
       end
     end
+    k.userspace.component = nil
+    k.userspace.computer = nil
+    k.userspace.unicode = nil
+    k.userspace.package.loaded.component = {}
+    for k,v in pairs(component) do
+      k.userspace.package.loaded.component[k] = wrap(v,
+        perms.user.COMPONENTS)
+    end
+    k.userspace.package.loaded.computer = {
+      getDeviceInfo = wrap(computer.getDeviceInfo, perms.user.HWINFO),
+      setArchitecture = wrap(computer.setArchitecture, perms.user.SETARCH),
+      addUser = wrap(computer.addUser, perms.user.MANAGE_USERS),
+      removeUser = wrap(computer.removeUser, perms.user.MANAGE_USERS),
+      setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR)
+    }
+    for k, v in pairs(computer) do
+      k.userspace.package.loaded.computer[k] = k.userspace.package.loaded.computer[k] or v
+    end
+    k.userspace.package.loaded.unicode = k.util.copy_table(unicode)
   end)
 end

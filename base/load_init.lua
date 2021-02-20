@@ -79,7 +79,7 @@ end
 
 do
   k.log(k.loglevels.info, "Creating userspace sandbox")
-  local sbox = k.util.copy(_G)
+  local sbox = k.util.copy_table(_G)
   k.userspace = sbox
   sbox._G = sbox
   k.hooks.call("sandbox", sbox)
