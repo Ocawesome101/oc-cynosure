@@ -87,6 +87,7 @@ do
     return ret
   end
 
+  local k = k
   k.hooks.add("sandbox", function()
     k.userspace.k = nil
     local acl = k.security.acl
@@ -104,8 +105,8 @@ do
     k.userspace.computer = nil
     k.userspace.unicode = nil
     k.userspace.package.loaded.component = {}
-    for k,v in pairs(component) do
-      k.userspace.package.loaded.component[k] = wrap(v,
+    for f,v in pairs(component) do
+      k.userspace.package.loaded.component[f] = wrap(v,
         perms.user.COMPONENTS)
     end
     k.userspace.package.loaded.computer = {
@@ -115,8 +116,8 @@ do
       removeUser = wrap(computer.removeUser, perms.user.MANAGE_USERS),
       setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR)
     }
-    for k, v in pairs(computer) do
-      k.userspace.package.loaded.computer[k] = k.userspace.package.loaded.computer[k] or v
+    for f, v in pairs(computer) do
+      k.userspace.package.loaded.computer[f] = k.userspace.package.loaded.computer[f] or v
     end
     k.userspace.package.loaded.unicode = k.util.copy_table(unicode)
   end)

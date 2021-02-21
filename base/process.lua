@@ -73,6 +73,7 @@ do
       waiting = true,
       stopped = false,
       handles = {},
+      coroutine = {},
       cputime = 0,
       deadline = 0,
     }, proc_mt)
