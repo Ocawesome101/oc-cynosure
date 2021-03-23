@@ -45,9 +45,10 @@ do
   -- this is a bit like util.protect except tables are still writable
   -- even i still don't fully understand how this works, but it works
   -- nonetheless
-  if computer.totalMemory() <= 262144 then
+  --[[
+  if computer.totalMemory() < 262144 then
     -- if we have 256k or less memory, use the mem-friendly function
-    function util.copy(tbl)
+    function util.copy_table(tbl)
       if type(tbl) ~= "table" then return tbl end
       local shadow = {}
       local copy_mt = {
@@ -72,7 +73,7 @@ do
       copy_mt.__ipairs = copy_mt.__pairs
       return setmetatable(shadow, copy_mt)
     end
-  else
+  else--]] do
     -- from https://lua-users.org/wiki/CopyTable
     local function deepcopy(orig, copies)
       copies = copies or {}

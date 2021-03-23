@@ -283,33 +283,37 @@ do
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    if self.attributes.echo then
-      local ch = signal[3]
-      local tw
-      if #char == 1 and ch == 0 then
-        char = ""
-        tw = ""
-      elseif #char == 1 and ch < 32 then
-        local tch = string.char(
-            (ch == 0 and 32) or
-            (ch < 27 and ch + 96) or
-            (ch == 27 and "[") or
-            (ch == 28 and "\\") or
-            (ch == 29 and "]") or
-            (ch == 30 and "~") or
-            (ch == 31 and "?") or ch
-          ):upper()
-        tw = "^" .. tch
-        char = "\27[" .. tch
-      end
-      if ch == 13 then char = "\n"
+    local ch = signal[3]
+    local tw = char
+    if #char == 1 and ch == 0 then
+      char = ""
+      tw = ""
+    elseif char:match("\27%[[ABCD]") then
+      tw = string.format("^[%s", char:sub(-1))
+    elseif #char == 1 and ch < 32 then
+      local tch = string.char(
+          (ch == 0 and 32) or
+          (ch < 27 and ch + 96) or
+          (ch == 27 and "[") or
+          (ch == 28 and "\\") or
+          (ch == 29 and "]") or
+          (ch == 30 and "~") or
+          (ch == 31 and "?") or ch
+        ):upper()
+      tw = "^" .. tch
+    end
+    if not self.attributes.raw then
+      if ch == 13 then
+        char = "\n"
+        tw = "\n"
       elseif ch == 8 then
-        tw = ("\27[D \27[D")
+        tw = "\27[D \27[D"
         char = ""
-        self.rb = self.rb:sub(1, -1) end
-      if self.attributes.echo then
-        self:write(char)
+        self.rb = self.rb:sub(1, -1)
       end
+    end
+    if self.attributes.echo then
+      self:write(tw or "")
     end
     self.rb = string.format("%s%s", self.rb, char)
   end
