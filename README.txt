@@ -10,6 +10,7 @@ and pass command-line arguments.  Cynosure is flexible!
 
 Main goals:
   - Faster VT100 emulation than Paragon or Monolith
+    o  Benchmarks show a nearly 2x improvement
   - Better scheduler and pipes, perhaps more integrated
   - Better dynamic module loading
   - Better unmanaged filesystem interface
@@ -18,6 +19,7 @@ Main goals:
 
 Core Features
 =============
+Some of these may be unrealistic.  These are subject to change.
   - Every resource is represented to userspace as a file
     o Process creation is still done via specific API due to various
           intricacies of the Lua language.  Could be done through sending
