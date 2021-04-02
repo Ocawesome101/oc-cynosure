@@ -50,6 +50,9 @@ do
 
   function io.lines(file, fmt)
     file = file or io.stdin
+    if type(file) == "string" then
+      file = assert(io.open(file, "r"))
+    end
     return file:lines(fmt)
   end
 
