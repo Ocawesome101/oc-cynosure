@@ -26,6 +26,7 @@ do
     k.logio = k.create_tty(lgpu, lscr)
     function k.log(level, ...)
       local msg = safe_concat(...)
+      msg = msg:gsub("\t", "  ")
       if (tonumber(k.cmdline.loglevel) or 1) <= level then
         k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),
           msg))

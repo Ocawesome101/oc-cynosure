@@ -11,7 +11,7 @@ do
   function api.spawn(args)
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
-    local parent = current or {}
+    local parent = processes[current or 0] or {}
     local new = k.create_process {
       name = args.name,
       parent = parent.pid or 0,
@@ -157,6 +157,9 @@ do
       checkArg(1, pid, "number", "nil")
       local cur = current
       local atmp = processes[pid]
+      if not atmp then
+        return true
+      end
       if (atmp or {owner=current.owner}).owner ~= cur.owner and
          cur.owner ~= 0 then
         return nil, "permission denied"
