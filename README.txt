@@ -4,13 +4,14 @@ Cynosure
 A hopefully decent Unix-like kernel for OpenComputers.  Could be considered an
 attempt at a better Paragon.
 
-Requires Lua 5.3.  `build.sh` will build the kernel.  Put it as `init.lua` to
-load Cynosure directly from a managed filesystem, or load it from a boot loader
-and pass command-line arguments.  Cynosure is flexible!
+Requires Lua 5.3.  Executing `./build` will build the kernel.  Put it as
+`init.lua` to load Cynosure directly from a managed filesystem, or load it from
+a boot loader and pass command-line arguments.  Cynosure is flexible!
 
 Main goals:
   - Faster VT100 emulation than Paragon or Monolith
-    o  Benchmarks show a nearly 2x improvement
+    o  Benchmarks show a nearly 2x improvement - almost as fast as raw GPU
+       access!
   - Better scheduler and pipes, perhaps more integrated
   - Better dynamic module loading
   - Better unmanaged filesystem interface
@@ -41,9 +42,9 @@ Some of these may be unrealistic.  These are subject to change.
         - </sys/mounts>:
             /sys/dev/hd0: /
             /sys/dev/fd0: /mnt/openos
-  - Full-featured and fast VT100 emulation
+  - Full-featured and fast VT100 emulation (see above)
   - Hook system
-  - User system
+  - Multi-user system supporting ACLs and permissions
   - Process-based scheduling
     o Signals are managed per-process through a queue
       > Easier inter-thread communication

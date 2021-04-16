@@ -22,6 +22,8 @@ end
 --#include "base/fsapi.lua"
 --#include "base/stdlib.lua"
 --#include "base/types.lua"
+--#include "base/struct.lua"
+--#include "base/syslog.lua"
 --#include "base/thread.lua"
 --#include "base/process.lua"
 --#include "base/scheduler.lua"

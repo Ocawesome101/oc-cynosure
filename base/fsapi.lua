@@ -374,7 +374,8 @@ do
       pnode.children[full] = node
     else
       pnode.children[full] = {node=device, children={}}
-      mounted[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
+      -- this line is very crunched to fit in 80 characters :P
+      mounted[path]=(device.node.getLabel and device.node.getLabel())or"unknown"
     end
     return true
   end

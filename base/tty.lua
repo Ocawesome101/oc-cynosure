@@ -218,6 +218,8 @@ do
     gpu.set(self.cx, self.cy, c)
     gpu.setForeground(self.fg)
     gpu.setBackground(self.bg)
+    -- lazily convert tabs
+    str = str:gsub("\t", "  ")
     while #str > 0 do
       if self.in_esc then
         local esc_end = str:find("[a-zA-Z]")

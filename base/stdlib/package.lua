@@ -78,11 +78,11 @@ do
     checkArg(1, file, "string")
     local ok, err = loadfile(file)
     if not ok then
-      error(err)
+      error(err, 0)
     end
     local stat, ret = xpcall(ok, debug.traceback)
     if not stat and ret then
-      error(ret)
+      error(ret, 0)
     end
     return ret
   end
@@ -117,7 +117,8 @@ do
       setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR)
     }
     for f, v in pairs(computer) do
-      k.userspace.package.loaded.computer[f] = k.userspace.package.loaded.computer[f] or v
+      k.userspace.package.loaded.computer[f] =
+        k.userspace.package.loaded.computer[f] or v
     end
     k.userspace.package.loaded.unicode = k.util.copy_table(unicode)
     k.userspace.package.loaded.filesystem = k.util.copy_table(k.fs.api)

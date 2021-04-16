@@ -40,10 +40,27 @@ do
     return nil, "invalid password"
   end
 
-  function api.exec_as(uid, pass, func)
+  function api.exec_as(uid, pass, func, pname, wait)
     checkArg(1, uid, "number")
     checkArg(2, pass, "string")
     checkArg(3, func, "function")
+    checkArg(4, pname, "string", "nil")
+    checkArg(5, wait, "boolean", "nil")
+    if not k.acl.user_has_permission(k.scheduler.info().owner,
+        k.acl.permissions.user.SUDO) then
+      return nil, "permission denied: no permission"
+    end
+    if not api.authenticate(uid, pass) then
+      return nil, "permission denied: bad login"
+    end
+    local new = {
+      func = func,
+      name = pname or tostring(func),
+      owner = uid,
+    }
+    local p = k.scheduler.spawn(new)
+    if not wait then return end
+    return k.userspace.package.loaded.process.await(p.pid)
   end
 
   function api.get_uid(uname)

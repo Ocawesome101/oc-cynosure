@@ -17,9 +17,9 @@ do
       parent = parent.pid or 0,
       stdin = parent.stdin or args.stdin,
       stdout = parent.stdout or args.stdout,
-      input = args.input,
-      output = args.output,
-      owner = parent.owner or 0,
+      input = args.input or parent.stdin,
+      output = args.output or parent.stdout,
+      owner = args.owner or parent.owner or 0,
     }
     new:add_thread(args.func)
     processes[new.pid] = new
@@ -36,6 +36,7 @@ do
     end
     local info = {
       pid = proc.pid,
+      name = proc.name,
       waiting = proc.waiting,
       stopped = proc.stopped,
       deadline = proc.deadline,
@@ -49,6 +50,7 @@ do
         push_signal = proc.push_signal,
         pull_signal = proc.pull_signal,
         io = proc.io,
+        self = proc,
         handles = proc.handles,
         coroutine = proc.coroutine
       }
@@ -174,6 +176,21 @@ do
       end
       table.sort(pr)
       return pr
+    end
+
+    -- this is not provided at the kernel level
+    -- largely because there is no real use for it
+    -- returns: exit status, exit message
+    function p.await(pid)
+      checkArg(1, pid, "number")
+      local signal = {}
+      if not processes[pid] then
+        return nil, "no such process"
+      end
+      repeat
+        signal = table.pack(coroutine.yield())
+      until signal[1] == "process_died" and signal[2] == pid
+      return signal[3], signal[4]
     end
     
     p.info = api.info
