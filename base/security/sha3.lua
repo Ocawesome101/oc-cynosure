@@ -1,3 +1,5 @@
+-- from https://github.com/philanc/plc iirc
+
 k.log(k.loglevels.info, "base/security/sha3.lua")
 
 do

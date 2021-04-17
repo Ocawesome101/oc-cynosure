@@ -4,18 +4,21 @@ k.log(k.loglevels.info, "base/util")
 
 do
   local util = {}
+  
   function util.merge_tables(a, b)
     for k, v in pairs(b) do
       if not a[k] then
         a[k] = v
       end
     end
+  
     return a
   end
 
   -- here we override rawset() in order to properly protect tables
   local _rawset = rawset
   local blacklist = setmetatable({}, {__mode = "k"})
+  
   function _G.rawset(t, k, v)
     if not blacklist[t] then
       return _rawset(t, k, v)
@@ -37,6 +40,7 @@ do
       __pairs = tbl,
       __metatable = {}
     }
+  
     return setmetatable(new, mt)
   end
 
@@ -45,7 +49,7 @@ do
   -- this is a bit like util.protect except tables are still writable
   -- even i still don't fully understand how this works, but it works
   -- nonetheless
-  --[[
+  --[[disabled due to some issues i was having
   if computer.totalMemory() < 262144 then
     -- if we have 256k or less memory, use the mem-friendly function
     function util.copy_table(tbl)
@@ -79,20 +83,24 @@ do
       copies = copies or {}
       local orig_type = type(orig)
       local copy
+    
       if orig_type == 'table' then
         if copies[orig] then
           copy = copies[orig]
         else
           copy = {}
           copies[orig] = copy
+      
           for orig_key, orig_value in next, orig, nil do
             copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
           end
+          
           setmetatable(copy, deepcopy(getmetatable(orig), copies))
         end
       else -- number, string, boolean, etc
         copy = orig
       end
+
       return copy
     end
 
@@ -103,13 +111,16 @@ do
 
   function util.to_hex(str)
     local ret = ""
+    
     for char in str:gmatch(".") do
       ret = string.format("%s%02x", ret, string.byte(char))
     end
+    
     return ret
   end
 
   -- lassert: local assert
+  -- removes the "init:123" from errors (fires at level 0)
   function util.lassert(a, ...)
     if not a then error(..., 0) else return a, ... end
   end

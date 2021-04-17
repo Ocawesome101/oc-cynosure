@@ -13,27 +13,36 @@ do
   function process:resume(...)
     for k, v in pairs(self.threads) do
       local result = table.pack(v:resume(...))
+  
       if v:status() == "dead" then
         self.threads[k] = nil
+      
         if not result[1] then
           self:push_signal("thread_died", v.id)
+        
           return nil, result[2]
         end
       end
     end
+
     if not next(self.threads) then
       self.dead = true
     end
+    
     return true
   end
 
   local id = 0
   function process:add_thread(func)
     checkArg(1, func, "function")
+    
     local new = coroutine.create(func)
+    
     id = id + 1
     new.id = id
+    
     self.threads[#self.threads + 1] = new
+    
     return id
   end
 
@@ -42,6 +51,7 @@ do
   end
 
   local c_pushSignal = computer.pushSignal
+  
   function process:push_signal(...)
     local signal = table.pack(...)
     table.insert(self.queue, signal)
@@ -56,8 +66,10 @@ do
   end
 
   local pid = 0
+  
   function k.create_process(args)
     pid = pid + 1
+  
     local new = setmetatable({
       name = args.name,
       pid = pid,
@@ -77,11 +89,14 @@ do
       cputime = 0,
       deadline = 0,
     }, proc_mt)
+    
     args.stdin, args.stdout, args.stderr,
                     args.input, args.output = nil, nil, nil
+    
     for k, v in pairs(args) do
       new[k] = v
     end
+    
     new.coroutine.status = function(self)
       if self.dead then
         return "dead"
@@ -93,6 +108,7 @@ do
         return "running"
       end
     end
+    
     return new
   end
 end

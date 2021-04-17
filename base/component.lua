@@ -6,12 +6,14 @@ do
   function component.get(addr, mkpx)
     checkArg(1, addr, "string")
     checkArg(2, mkpx, "boolean", "nil")
+    
     local pat = string.format("^%s", addr:gsub("%-", "%%-"))
     for k, v in component.list() do
       if k:match(pat) then
         return mkpx and component.proxy(k) or k
       end
     end
+    
     return nil, "no such component"
   end
 
@@ -21,6 +23,7 @@ do
       if not addr then
         error(string.format("no component of type '%s'", k))
       end
+    
       return component.proxy(addr)
     end
   })

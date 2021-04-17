@@ -28,8 +28,8 @@ do
       OTHER_WRITE = 128,
       OTHER_EXEC = 256
     }
-    
   }
+
   local acl = {}
 
   acl.permissions = permissions
@@ -37,16 +37,20 @@ do
   function acl.user_has_permission(uid, permission)
     checkArg(1, uid, "number")
     checkArg(2, permission, "number")
+  
     local attributes, err = k.security.users.attributes(uid)
+    
     if not attributes then
       return nil, err
     end
+    
     return acl.has_permission(attributes.acls, permission)
   end
 
   function acl.has_permission(perms, permission)
     checkArg(1, perms, "number")
     checkArg(2, permission, "number")
+    
     return perms & permission ~= 0
   end
 

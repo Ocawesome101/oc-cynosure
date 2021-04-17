@@ -24,6 +24,7 @@ do
   local function pop(str, n)
     local ret = str:sub(1, n)
     local also = str:sub(#ret + 1, -1)
+ 
     return also, ret
   end
 

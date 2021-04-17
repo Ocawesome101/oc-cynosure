@@ -1,4 +1,4 @@
--- fairly efficient binary structs
+-- binary struct
 -- note that to make something unsigned you ALWAYS prefix the type def with
 -- 'u' rather than 'unsigned ' due to Lua syntax limitations.
 -- ex:
@@ -7,6 +7,7 @@
 --   string[8]("field_2")
 -- }
 -- local copy = example "\0\14A string"
+-- yes, there is lots of metatable hackery behind the scenes
 
 k.log(k.loglevels.info, "ksrc/struct")
 
@@ -53,11 +54,14 @@ do
       return char
     else
       local tp
+  
       for t, v in pairs(types) do
         local match = k:match("^"..t)
         if match then tp = t break end
       end
+      
       if not tp then return nil end
+      
       return function(value)
         return {fmtstr = types[tp] .. tonumber(k:match("%d+$") or "0")//8,
           field = value}
@@ -88,8 +92,10 @@ do
   function struct(fields, name)
     checkArg(1, fields, "table")
     checkArg(2, name, "string", "nil")
+    
     local pat = "<"
     local args = {}
+    
     for i=1, #fields, 1 do
       local v = fields[i]
       pat = pat .. v.fmtstr
@@ -100,18 +106,23 @@ do
       __call = function(_, data)
         assert(type(data) == "string" or type(data) == "table",
           "bad argument #1 to struct constructor (string or table expected)")
+    
         if type(data) == "string" then
           local set = table.pack(string.unpack(pat, data))
           local ret = {}
+        
           for i=1, #args, 1 do
             ret[args[i]] = set[i]
           end
+          
           return ret
         elseif type(data) == "table" then
           local set = {}
+          
           for i=1, #args, 1 do
             set[i] = data[args[i]]
           end
+          
           return string.pack(pat, table.unpack(set))
         end
       end,
@@ -121,5 +132,4 @@ do
       __name = name or "struct"
     })
   end
-
 end

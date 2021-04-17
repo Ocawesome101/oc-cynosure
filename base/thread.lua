@@ -10,14 +10,15 @@ do
   local old_coroutine = coroutine
   local _coroutine = {}
   _G.coroutine = _coroutine
+  
   function _coroutine.create(func)
     checkArg(1, func, "function")
+  
     return setmetatable({
       __thread = old_coroutine.create(function()
         return select(2, k.util.lassert(xpcall(func, handler)))
       end)
-    },
-    {
+    }, {
       __index = _coroutine,
       __name = "thread"
     })
@@ -25,7 +26,9 @@ do
 
   function _coroutine.wrap(fnth)
     checkArg(1, fnth, "function", "thread")
+    
     if type(fnth) == "function" then fnth = _coroutine.create(fnth) end
+    
     return function(...)
       return select(2, fnth:resume(...))
     end

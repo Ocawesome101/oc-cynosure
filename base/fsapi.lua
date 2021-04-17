@@ -30,6 +30,7 @@ do
 
   local function split(path)
     local segments = {}
+    
     for seg in path:gmatch("[^/]+") do
       if seg == ".." then
         segments[#segments] = nil
@@ -37,6 +38,7 @@ do
         segments[#segments + 1] = seg
       end
     end
+    
     return segments
   end
 
@@ -44,57 +46,68 @@ do
 
   -- "clean" a path
   local function clean(path)
-    return table.concat(
-      split(
-        path
-      ), "/"
-    )
+    return table.concat(split(path), "/")
   end
 
   local faux = {children = mounts}
   local resolving = {}
-  local resolve
-  resolve = function(path)
+
+  local function resolve(path)
     if resolving[path] then
       return nil, "recursive mount detected"
     end
+    
     path = clean(path)
     resolving[path] = true
+    
     local current, parent = faux
+    
     if not mounts["/"] then
       return nil, "root filesystem is not mounted!"
     end
+    
     if current.children[path] then
       return current.children[path]
     end
+    
     local segments = split(path)
     table.insert(segments, 1, "/")
+    
     local base_n = 1 -- we may have to traverse multiple mounts
+    
     for i=1, #segments, 1 do
       local try = table.concat(segments, "/", base_n, i)
+    
       if current.children[try] then
         base_n = i -- we are now at this stage of the path
         local next_node = current.children[try]
+      
         if type(next_node) == "string" then
           local err
           next_node, err = resolve(next_node)
+        
           if not next_node then
             resolving[path] = false
             return nil, err
           end
         end
+        
         parent = current
         current = next_node
       elseif not current.node:stat(try) then
         resolving[path] = false
+
         return nil, fs.errors.file_not_found
       end
     end
+    
     resolving[path] = false
     local ret = "/"..table.concat(segments, "/", base_n, #segments)
+    
     if must_exist and not current.node:exists(ret) then
       return nil, fs.errors.file_not_found
     end
+    
     return current, parent, ret
   end
 
@@ -109,9 +122,12 @@ do
   end
 
   function _managed:stat(file)
+    checkArg(1, file, "string")
+
     if not self.node.exists(file) then
       return nil, fs.errors.file_not_found
     end
+    
     return {
       permissions = self:info().read_only and 365 or 511,
       isDirectory = self.node.isDirectory(file),
@@ -125,49 +141,62 @@ do
   function _managed:touch(file, ftype)
     checkArg(1, file, "string")
     checkArg(2, ftype, "number", "nil")
+    
     if self.node.isReadOnly() then
       return nil, fs.errors.read_only
     end
+    
     if self.node.exists(file) then
       return nil, fs.errors.file_exists
     end
+    
     if ftype == fs.types.file or not ftype then
       local fd = self.node.open(file, "w")
+    
       if not fd then
         return nil, fs.errors.failed_write
       end
+      
       self.node.write(fd, "")
       self.node.close(fd)
     elseif ftype == fs.types.directory then
       local ok, err = self.node.makeDirectory(file)
+      
       if not ok then
         return nil, err or "unknown error"
       end
     elseif ftype == fs.types.link then
       return nil, "unsupported operation"
     end
+    
     return true
   end
   
   function _managed:remove(file)
     checkArg(1, file, "string")
+    
     if not self.node.exists(file) then
       return nil, fs.errors.file_not_found
     end
+    
     if self.node.isDirectory(file) and #(self.node.list(file) or {}) > 0 then
       return nil, fs.errors.is_a_directory
     end
+    
     return self.node.remove(file)
   end
 
   function _managed:list(path)
     checkArg(1, path, "string")
+    
     if not self.node.exists(path) then
       return nil, fs.errors.file_not_found
     elseif not self.node.isDirectory(path) then
       return nil, fs.errors.not_a_directory
     end
+    
     local files = self.node.list(path) or {}
+    
     return files
   end
   
@@ -190,9 +219,11 @@ do
   function _managed:open(file, mode)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
+    
     if (mode == "r" or mode == "a") and not self.node.exists(file) then
       return nil, fs.errors.file_not_found
     end
+    
     local fd = {
       fd = self.node.open(file, mode or "r"),
       node = self.node,
@@ -201,41 +232,46 @@ do
       seek = fseek,
       close = fclose
     }
+    
     return fd
   end
   
   local fs_mt = {__index = _managed}
   local function create_node_from_managed(proxy)
-    return setmetatable({
-      node = proxy
-    }, fs_mt)
+    return setmetatable({node = proxy}, fs_mt)
   end
 
   local function create_node_from_unmanaged(proxy)
     local fs_superblock = proxy.readSector(1)
+    
     for k, v in pairs(registered.filesystems) do
       if v.is_valid_superblock(superblock) then
         return v.new(proxy)
       end
     end
+    
     return nil, "no compatible filesystem driver available"
   end
 
   fs.PARTITION_TABLE = "partition_tables"
   fs.FILESYSTEM = "filesystems"
+  
   function fs.register(category, driver)
     if not registered[category] then
       return nil, "no such category: " .. category
     end
+  
     table.insert(registered[category], driver)
     return true
   end
 
   function fs.get_partition_table_driver(filesystem)
     checkArg(1, filesystem, "string", "table")
+    
     if type(filesystem) == "string" then
       filesystem = component.proxy(filesystem)
     end
+    
     if filesystem.type == "filesystem" then
       return nil, "managed filesystem has no partition table"
     else -- unmanaged drive - perfect
@@ -245,14 +281,17 @@ do
         end
       end
     end
+    
     return nil, "no compatible partition table driver available"
   end
 
   function fs.get_filesystem_driver(filesystem)
     checkArg(1, filesystem, "string", "table")
+    
     if type(filesystem) == "string" then
       filesystem = component.proxy(filesystem)
     end
+    
     if filesystem.type == "filesystem" then
       return create_node_from_managed(filesystem)
     else
@@ -262,23 +301,28 @@ do
 
   -- actual filesystem API now
   fs.api = {}
+  
   function fs.api.open(file, mode)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
+  
     local node, err, path = resolve(file)
     if not node then
       return nil, err
     end
+    
     mode = mode or "r"
     local data = node.node:stat(path)
     local user = (k.scheduler.info() or {owner=0}).owner
     -- TODO: groups
+    
     if data.owner ~= user and not k.security.acl.user_has_permission(user,
                             k.security.acl.permissions.user.OPEN_UNOWNED) then
       return nil, "permission denied"
     else
       local perms = k.security.acl.permissions.file
       local rperm, wperm
+    
       if data.owner ~= user then
         rperm = perms.OTHER_READ
         wperm = perms.OTHER_WRITE
@@ -286,6 +330,7 @@ do
         rperm = perms.OWNER_READ
         wperm = perms.OWNER_WRITE
       end
+      
       if (mode == "r" and not
         k.security.acl.has_permission(data.permissions, rperm)) or
         ((mode == "w" or mode == "a") and not
@@ -293,38 +338,50 @@ do
         return nil, "permission denied"
       end
     end
+    
     return node.node:open(path, mode)
   end
 
   function fs.api.stat(file)
     checkArg(1, file, "string")
+    
     local node, err, path = resolve(file)
+    
     if not node then
       return false
     end
+    
     return node.node:stat(file)
   end
 
   function fs.api.touch(file, ftype)
     checkArg(1, file, "string")
     checkArg(2, ftype, "number", "nil")
+    
     ftype = ftype or fs.types.file
+    
     local root, base = file:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     base = base or file
+    
     local node, err, path = resolve(root)
+    
     if not node then
       return nil, err
     end
+    
     return node.node:touch(path .. "/" .. base, ftype)
   end
 
   function fs.api.remove(file)
     checkArg(1, file, "string")
+    
     local node, err, pack = resolve(root)
+    
     if not node then
       return nil, err
     end
+    
     return node.node:remove(file)
   end
 
@@ -335,6 +392,7 @@ do
     NODE = 1,
     OVERLAY = 2,
   }
+  
   function fs.api.mount(node, fstype, path)
     checkArg(1, node, "string", "table")
     checkArg(2, fstype, "number")
@@ -396,17 +454,23 @@ do
 
   function fs.api.umount(path)
     checkArg(1, path, "string")
+    
     path = clean(path)
+    
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
+    
     local node, err, rpath = resolve(root)
+    
     if not node then
       return nil, err
     end
+    
     local full = clean(string.format("%s/%s", rpath, fname))
     node.children[full] = nil
     mounted[path] = nil
+    
     return true
   end
 
