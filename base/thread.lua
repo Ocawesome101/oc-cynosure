@@ -3,6 +3,10 @@
 k.log(k.loglevels.info, "base/thread")
 
 do
+  local function handler(err)
+    return debug.traceback(err, 3)
+  end
+
   local old_coroutine = coroutine
   local _coroutine = {}
   _G.coroutine = _coroutine
@@ -10,7 +14,7 @@ do
     checkArg(1, func, "function")
     return setmetatable({
       __thread = old_coroutine.create(function()
-        return select(2, assert(xpcall(func, debug.traceback)))
+        return select(2, k.util.lassert(xpcall(func, handler)))
       end)
     },
     {

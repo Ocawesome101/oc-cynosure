@@ -204,12 +204,18 @@ do
     end
   end
 
+  -- All open TTYs
+  local ttys = {}
+  local ctty = 1 -- current TTY
+
   local _stream = {}
+  
   -- This is where most of the heavy lifting happens.  I've attempted to make
-  --   this function fairly optimized, but there's only so much one can do given
-  --   OpenComputers's call budget limits and wrapped string library.
+  -- this function fairly optimized, but there's only so much one can do given
+  -- OpenComputers's call budget limits and wrapped string library.
   function _stream:write(str)
     local gpu = self.gpu
+
     -- TODO: cursor logic is a bit brute-force currently, there are certain
     -- TODO: scenarios where cursor manipulation is unnecessary
     local c, f, b = gpu.get(self.cx, self.cy)
@@ -218,8 +224,10 @@ do
     gpu.set(self.cx, self.cy, c)
     gpu.setForeground(self.fg)
     gpu.setBackground(self.bg)
+    
     -- lazily convert tabs
     str = str:gsub("\t", "  ")
+    
     while #str > 0 do
       if self.in_esc then
         local esc_end = str:find("[a-zA-Z]")
@@ -231,7 +239,8 @@ do
           str, finish = pop(str, esc_end)
           local esc = string.format("%s%s", self.esc, finish)
           self.esc = ""
-          local separator, raw_args, code = esc:match("\27([%[%(])([%d;]*)([a-zA-Z])")
+          local separator, raw_args, code = esc:match(
+            "\27([%[%(])([%d;]*)([a-zA-Z])")
           raw_args = raw_args or "0"
           local args = {}
           for arg in raw_args:gmatch("([^;]+)") do

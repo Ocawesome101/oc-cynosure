@@ -109,5 +109,10 @@ do
     return ret
   end
 
+  -- lassert: local assert
+  function util.lassert(a, ...)
+    if not a then error(..., 0) else return a, ... end
+  end
+
   k.util = util
 end
