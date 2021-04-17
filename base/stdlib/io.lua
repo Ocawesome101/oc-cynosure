@@ -60,18 +60,19 @@ do
 
   function io.lines(file, fmt)
     file = file or io.stdin
-    checkArg(1, file, "FILE*")
 
     if type(file) == "string" then
       file = assert(io.open(file, "r"))
     end
+    
+    checkArg(1, file, "FILE*")
     
     return file:lines(fmt)
   end
 
   local function stream(kk)
     return function(v)
-      checkArg(1, v, "FILE*")
+      if v then checkArg(1, v, "FILE*") end
 
       local t = k.scheduler.info().data.io
     

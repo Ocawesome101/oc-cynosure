@@ -199,7 +199,7 @@ do
 
   local fmt = {
     __index = buffer,
-    __metatable = {},
+    -- __metatable = {},
     __name = "FILE*"
   }
 
