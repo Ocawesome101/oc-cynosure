@@ -40,6 +40,8 @@ do
     return segments
   end
 
+  fs.split = split
+
   -- "clean" a path
   local function clean(path)
     return table.concat(
@@ -337,11 +339,14 @@ do
     checkArg(1, node, "string", "table")
     checkArg(2, fstype, "number")
     checkArg(2, path, "string")
+    
     local device, err = node
+    
     if fstype ~= fs.api.types.RAW then
       -- TODO: properly check object methods first
       goto skip
     end
+    
     if k.sysfs then
       local sdev, serr = k.sysfs.resolve_device(node)
       if not sdev then return nil, serr end
@@ -349,34 +354,43 @@ do
     else
       device, err = fs.get_filesystem_driver(node)
     end
+    
     ::skip::
     if not device then
       return nil, err
     end
+    
     path = clean(path)
     if path == "" then path = "/" end
+    
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
+    
     local pnode, err, rpath
+    
     if path == "/" then
       mounts["/"] = {node = device, children = {}}
       return true
     else
       pnode, err, rpath = resolve(root)
     end
+    
     if not pnode then
       return nil, err
     end
+    
     local full = clean(string.format("%s/%s", rpath, fname))
     if full == "" then full = "/" end
+    
     if type(node) == "string" then
       pnode.children[full] = node
     else
       pnode.children[full] = {node=device, children={}}
-      -- this line is very crunched to fit in 80 characters :P
-      mounted[path]=(device.node.getLabel and device.node.getLabel())or"unknown"
+      mounted[path]=(device.node and device.node.getLabel and
+        device.node.getLabel()) or "unknown"
     end
+    
     return true
   end
 
