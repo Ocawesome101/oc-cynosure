@@ -10,7 +10,7 @@ _G.main = function()
   log("warn", "writing includes.lua")
   local handle = assert(io.open("includes.lua", "w"))
   for _,inc in ipairs(include) do
-    handle:write(inc)
+    handle:write("--#include \"", inc, ".lua\"\n")
   end
   handle:close()
   io.write(ex("./luacomp init.lua -Okernel.lua"))
