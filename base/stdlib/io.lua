@@ -4,6 +4,7 @@ k.log(k.loglevels.info, "base/stdlib/io")
 
 do
   local fs = k.fs.api
+  local im = {stdin = 0, stdout = 1, stderr = 2}
  
   local mt = {
     __index = function(t, k)
@@ -18,6 +19,7 @@ do
     __newindex = function(t, k, v)
       local info = k.scheduler.info()
       info.data.io[k] = v
+      info.handles[im[k]] = v
     end
   }
 
@@ -33,12 +35,26 @@ do
     if not handle then
       return nil, err
     end
+
+    local fstream = k.create_fstream(handle, mode)
+
+    local info = k.scheduler.info()
+    if info then
+      info.data.handles[#info.data.handles + 1] = fstream
+      fstream.n = #info.data.handles
+      
+      local close = fstream.close
+      function fstream:close()
+        close(self)
+        info.data.handles[self.n] = nil
+      end
+    end
     
-    return k.create_fstream(handle, mode)
+    return fstream
   end
 
-  -- popen should be defined in userspace so the shell can handle it
-  -- tmpfile should be defined in userspace also
+  -- popen should be defined in userspace so the shell can handle it.
+  -- tmpfile should be defined in userspace also.
   -- it turns out that defining things PUC Lua can pass off to the shell
   -- *when you don't have a shell* is rather difficult and so, instead of
   -- weird hacks like in Paragon or Monolith, I just leave it up to userspace.

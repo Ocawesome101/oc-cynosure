@@ -385,13 +385,19 @@ do
     checkArg(1, n, "number")
 
     if self.attributes.line then
-      while (not self.rb:find("\n")) or (self.rb:find("\n") < n) do
+      while (not self.rb:find("\n")) or (self.rb:find("\n") < n)
+          and not self.rb:find("\4") do
         coroutine.yield()
       end
     else
-      while #rb < n do
+      while #self.rb < n and (self.attributes.raw or not self.rb:find("\4")) do
         coroutine.yield()
       end
+    end
+
+    if self.rb:find("\4") then
+      self.rb = ""
+      return nil
     end
 
     local data = self.rb:sub(1, n)
@@ -410,11 +416,14 @@ do
     self.flush = closed
     self.close = closed
     k.event.unregister(self.key_handler_id)
+    if self.ttyn then k.sysfs.unregister("/dev/tty"..self.ttyn) end
     return true
   end
 
+  local ttyn = 0
+
   -- this is the raw function for creating TTYs over components
-  -- userspace gets abstracted-away stuff
+  -- userspace gets somewhat-abstracted-away stuff
   function k.create_tty(gpu, screen)
     checkArg(1, gpu, "string")
     checkArg(2, screen, "string")
@@ -455,6 +464,13 @@ do
     new.key_handler_id = k.event.register("key_down", function(...)
       return new:key_down(...)
     end)
+
+    -- register the TTY with the sysfs
+    if k.sysfs then
+      k.sysfs.register(k.sysfs.types.tty, new, "/dev/tty"..ttyn)
+      new.ttyn = ttyn
+      ttyn = ttyn + 1
+    end
     
     return new
   end

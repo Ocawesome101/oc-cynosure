@@ -405,12 +405,11 @@ do
       goto skip
     end
     
-    if k.sysfs then
-      local sdev, serr = k.sysfs.resolve_device(node)
+    device, err = fs.get_filesystem_driver(node)
+    if k.sysfs and not device then
+      local sdev, serr = k.sysfs.retrieve(node)
       if not sdev then return nil, serr end
       device, err = fs.get_filesystem_driver(sdev)
-    else
-      device, err = fs.get_filesystem_driver(node)
     end
     
     ::skip::

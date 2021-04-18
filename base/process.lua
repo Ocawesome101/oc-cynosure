@@ -96,6 +96,10 @@ do
     for k, v in pairs(args) do
       new[k] = v
     end
+
+    new.handles[0] = new.stdin
+    new.handles[1] = new.stdout
+    new.handles[2] = new.stderr
     
     new.coroutine.status = function(self)
       if self.dead then

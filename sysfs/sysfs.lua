@@ -33,7 +33,7 @@ do
     if f == "/" then
       return tree
     end
-    
+
     local s = k.fs.split(f)
     local c = tree
     
@@ -119,6 +119,8 @@ do
     
     if not n then return nil, e end
     if n.dir then return nil, k.fs.errors.is_a_directory end
+
+    if n.open then return n.open(m) end
     
     return {
       read = n.read or ferr,
@@ -141,14 +143,14 @@ do
 
   function api.register(otype, node, path)
     checkArg(1, otype, "SYSFS_NODE")
-    checkArg(2, node, "string", "table")
-    checkArg(2, path, "string")
+    assert(type(node) ~= "nil", "bad argument #2 (value expected, got nil)")
+    checkArg(3, path, "string")
 
     if not handlers[otype] then
       return nil, string.format("sysfs: node type '%s' not handled", otype)
     end
 
-    local segments = fs.split(path)
+    local segments = k.fs.split(path)
     local nname = segments[#segments]
     local n, e = find(table.concat(segments, "/", 1, #segments - 1))
 
@@ -166,7 +168,34 @@ do
     return true
   end
 
-  function api.unregister()
+  function api.retrieve(path)
+    checkArg(1, path, "string")
+    return find(path)
+  end
+
+  function api.unregister(path)
+    checkArg(1, path, "string")
+    
+    local segments = fs.split(path)
+    local ppath = table.concat(segments, "/", 1, #segments - 1)
+    
+    local node = segments[#segments]
+    if node == "dir" then
+      return nil, fs.errors.file_not_found
+    end
+
+    local n, e = find(ppath)
+    if not n then
+      return nil, e
+    end
+
+    if not n[node] then
+      return nil, fs.errors.file_not_found
+    end
+
+    n[node] = nil
+
+    return true
   end
   
   function api.handle(otype, mkobj)
@@ -191,4 +220,4 @@ do
   end)
 end
 
---#include "extra/sysfs_handlers.lua"
+--#include "sysfs/handlers.lua"
