@@ -27,7 +27,7 @@ do
     new:add_thread(args.func)
     processes[new.pid] = new
     
-    if k.sysfs then k.sysfs.add_to("proc", new) end
+    if k.sysfs then k.sysfs.register(k.sysfs.types.process, new) end
     
     return new
   end

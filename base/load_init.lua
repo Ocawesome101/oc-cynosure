@@ -94,6 +94,14 @@ do
   k.log(k.loglevels.info, "Mounted root filesystem")
 end
 
+-- register components with the sysfs, if possible
+do
+  k.log(k.loglevels.info, "Registering components")
+  for k, v in component.list() do
+    computer.pushSignal("component_added", k, v)
+  end
+end
+
 do
   k.log(k.loglevels.info, "Creating userspace sandbox")
   

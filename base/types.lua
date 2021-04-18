@@ -52,6 +52,10 @@ do
     if cannot_alias[t2] then
       error("attempt to override default type")
     end
+
+    if defs[t2] then
+      error("cannot override existing typedef")
+    end
     
     defs[t2] = t1
     
