@@ -4,6 +4,7 @@ k.log(k.loglevels.info, "sysfs/sysfs")
 
 do
   local tree = {
+    dir = true,
     components = {
       dir = true,
       ["by-address"] = {dir = true},
@@ -56,8 +57,6 @@ do
   }
 
   local function find(f)
-    k.log(k.loglevels.info, "SYSFS FIND:", f)
-
     if f == "/" or f == "" then
       return tree
     end
@@ -66,7 +65,6 @@ do
     local c = tree
     
     for i=1, #s, 1 do
-      k.log(k.loglevels.info, "SYSFS CHECK SEGMENT:", s[i])
       if s[i] == "dir" then
         return nil, k.fs.errors.file_not_found
       end
@@ -75,8 +73,6 @@ do
         return nil, k.fs.errors.file_not_found
       end
 
-      k.log(k.loglevels.info, "SYSFS SEGMENT IS VALID")
-      
       c = c[s[i]]
     end
 
@@ -120,7 +116,7 @@ do
     
     local f = {}
     
-    for k, v in pairs(e) do
+    for k, v in pairs(n) do
       if k ~= "dir" then
         f[#f+1] = k
       end
