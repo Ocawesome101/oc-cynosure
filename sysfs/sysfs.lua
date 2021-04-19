@@ -4,9 +4,33 @@ k.log(k.loglevels.info, "sysfs/sysfs")
 
 do
   local tree = {
-    components = {dir = true},
+    components = {
+      dir = true,
+      ["by-address"] = {dir = true},
+      ["by-type"] = {dir = true}
+    },
     proc = {dir = true},
-    dev = {dir = true},
+    dev = {
+      dir = true,
+      stdin = {
+        dir = false,
+        open = function()
+          return io.stdin
+        end
+      },
+      stdout = {
+        dir = false,
+        open = function()
+          return io.stdout
+        end
+      },
+      stderr = {
+        dir = false,
+        open = function()
+          return io.stderr
+        end
+      },
+    },
     mounts = {
       dir = false,
       read = function(h)
