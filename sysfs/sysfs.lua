@@ -56,7 +56,9 @@ do
   }
 
   local function find(f)
-    if f == "/" then
+    k.log(k.loglevels.info, "SYSFS FIND:", f)
+
+    if f == "/" or f == "" then
       return tree
     end
 
@@ -64,6 +66,7 @@ do
     local c = tree
     
     for i=1, #s, 1 do
+      k.log(k.loglevels.info, "SYSFS CHECK SEGMENT:", s[i])
       if s[i] == "dir" then
         return nil, k.fs.errors.file_not_found
       end
@@ -71,6 +74,8 @@ do
       if not c[s[i]] then
         return nil, k.fs.errors.file_not_found
       end
+
+      k.log(k.loglevels.info, "SYSFS SEGMENT IS VALID")
       
       c = c[s[i]]
     end
@@ -84,7 +89,6 @@ do
     checkArg(1, f, "string")
     
     local n, e = find(f)
-    local e = tree[f]
     
     if n then
       return {
@@ -239,7 +243,7 @@ do
   -- we have to hook this here since the root filesystem isn't mounted yet
   -- when the kernel reaches this point.
   k.hooks.add("sandbox", function()
-    assert(k.fs.api.mount(obj, k.fs.api.types.NODE, "/sys"))
+    assert(k.fs.api.mount(obj, k.fs.api.types.NODE, "sys"))
     -- Adding the sysfs API to userspace is probably not necessary for most
     -- things.  If it does end up being necessary I'll do it.
     --k.userspace.package.loaded.sysfs = k.util.copy_table(api)

@@ -241,13 +241,18 @@ do
   end
 
   local _stream = {}
+
+  local function temp(...)
+    return ...
+  end
   
   -- This is where most of the heavy lifting happens.  I've attempted to make
   -- this function fairly optimized, but there's only so much one can do given
   -- OpenComputers's call budget limits and wrapped string library.
-  function _stream:write(str)
-    checkArg(1, str, "string")
+  function _stream:write(...)
+    checkArg(1, ..., "string")
 
+    local str = (k.util and k.util.concat or temp)(...)
     local gpu = self.gpu
 
     -- TODO: cursor logic is a bit brute-force currently, there are certain

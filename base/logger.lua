@@ -29,6 +29,10 @@ do
     function k.log(level, ...)
       local msg = safe_concat(...)
       msg = msg:gsub("\t", "  ")
+
+      if k.util and not k.util.concat then
+        k.util.concat = safe_concat
+      end
     
       if (tonumber(k.cmdline.loglevel) or 1) <= level then
         k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),

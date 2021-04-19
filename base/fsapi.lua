@@ -59,19 +59,28 @@ do
     
     path = clean(path)
     resolving[path] = true
+
+    k.log(k.loglevels.info, "FSAPI RESOLVE:", path)
     
-    local current, parent = faux
+    local current, parent = mounts["/"] or faux
+
+    for _k, v in pairs(current.children) do
+      k.log(k.loglevels.info, "FSAPI DEBUG:", _k, v)
+    end
     
     if not mounts["/"] then
       return nil, "root filesystem is not mounted!"
     end
+
+    if path == "" or path == "/" then
+      return mounts["/"], nil, ""
+    end
     
     if current.children[path] then
-      return current.children[path]
+      return current.children[path], nil, ""
     end
     
     local segments = split(path)
-    table.insert(segments, 1, "/")
     
     local base_n = 1 -- we may have to traverse multiple mounts
     
@@ -94,7 +103,7 @@ do
         
         parent = current
         current = next_node
-      elseif not current.node:stat(try) then
+      elseif not current.node or not current.node:stat(try) then
         resolving[path] = false
 
         return nil, fs.errors.file_not_found
@@ -373,16 +382,45 @@ do
     return node.node:touch(path .. "/" .. base, ftype)
   end
 
+  local n = {}
+  function fs.api.list(path)
+    checkArg(1, path, "string")
+    
+    local node, err, path = resolve(path)
+
+    if not node then
+      return nil, err
+    end
+
+    local ok, err = node.node:list(path)
+    if not ok and err then
+      return nil, err
+    end
+
+    ok = ok or {}
+
+    if node.children then
+      for k in pairs(node.children) do
+        if (fs.api.stat(path.."/"..k) or n).isDirectory then
+          k = k .. "/"
+        end
+        ok[#ok + 1] = k
+      end
+    end
+   
+    return ok
+  end
+
   function fs.api.remove(file)
     checkArg(1, file, "string")
     
-    local node, err, pack = resolve(root)
+    local node, err, path = resolve(root)
     
     if not node then
       return nil, err
     end
     
-    return node.node:remove(file)
+    return node.node:remove(path)
   end
 
   local mounted = {}
@@ -432,14 +470,14 @@ do
     else
       pnode, err, rpath = resolve(root)
     end
-    
+
     if not pnode then
       return nil, err
     end
     
     local full = clean(string.format("%s/%s", rpath, fname))
     if full == "" then full = "/" end
-    
+
     if type(node) == "string" then
       pnode.children[full] = node
     else

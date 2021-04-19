@@ -8,9 +8,10 @@ do
  
   local mt = {
     __index = function(t, k)
+      if not k.scheduler then return k.logio end
       local info = k.scheduler.info()
   
-      if info.data.io[k] then
+      if info and info.data and info.data.io and info.data.io[k] then
         return info.data.io[k]
       end
       
@@ -18,6 +19,7 @@ do
     end,
     __newindex = function(t, k, v)
       local info = k.scheduler.info()
+      if not info then return nil end
       info.data.io[k] = v
       info.handles[im[k]] = v
     end
@@ -90,6 +92,9 @@ do
     return function(v)
       if v then checkArg(1, v, "FILE*") end
 
+      if not k.scheduler.info() then
+        return k.logio
+      end
       local t = k.scheduler.info().data.io
     
       if v then
@@ -143,6 +148,7 @@ do
       args[i] = tostring(args[i])
     end
     
-    return io.write(table.concat(args, "  ", 1, args.n), "\n")
+    return (io.stdout or k.logio):write(
+      table.concat(args, "  ", 1, args.n), "\n")
   end
 end
