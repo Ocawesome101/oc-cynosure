@@ -1,7 +1,6 @@
 -- sysfs handlers
 
 do
-
   local util = {}
   function util.mkfile(data)
     local data = data
@@ -36,12 +35,25 @@ do
     }
   end
 
+  function util.fnmkfile(r, w)
+    return {
+      dir = false,
+      read = function(s)
+        if s.__read then
+          return nil
+        end
+        return r()
+      end,
+      write = w
+    }
+  end
+
 --#include "sysfs/handlers/generic.lua"
 --#include "sysfs/handlers/directory.lua"
 --#include "sysfs/handlers/process.lua"
 --#include "sysfs/handlers/tty.lua"
 
--- component-specific handlers
+  -- component-specific handlers
 -- #include "sysfs/handlers/"
 
 end -- sysfs handlers: Done
