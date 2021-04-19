@@ -1,5 +1,7 @@
 -- sysfs: Generic component handler
 
+k.log(k.loglevels.info, "sysfs/handlers/generic")
+
 do
   local function mknew(addr)
     return {

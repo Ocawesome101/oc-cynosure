@@ -1,5 +1,7 @@
 -- sysfs handlers
 
+k.log(k.loglevels.info, "sysfs/handlers")
+
 do
   local util = {}
   function util.mkfile(data)
@@ -53,7 +55,10 @@ do
 --#include "sysfs/handlers/process.lua"
 --#include "sysfs/handlers/tty.lua"
 
-  -- component-specific handlers
+-- component-specific handlers
 -- #include "sysfs/handlers/"
+
+-- component event handler
+--#include "sysfs/handlers/component.lua"
 
 end -- sysfs handlers: Done

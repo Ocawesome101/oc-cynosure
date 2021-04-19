@@ -1,5 +1,7 @@
 -- sysfs: Process handler
 
+k.log(k.loglevels.info, "sysfs/handlers/process")
+
 do
   local function mknew(proc)
     checkArg(1, proc, "process")

@@ -1,5 +1,7 @@
 -- sysfs API --
 
+k.log(k.loglevels.info, "sysfs/sysfs")
+
 do
   local tree = {
     components = {dir = true},

@@ -1,5 +1,7 @@
 -- sysfs: TTY device handling
 
+k.log(k.loglevels.info, "sysfs/handlers/tty")
+
 do
   local function mknew(tty)
     return {

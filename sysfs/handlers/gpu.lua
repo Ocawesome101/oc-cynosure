@@ -1,5 +1,7 @@
 -- sysfs: GPU hander
 
+k.log(k.loglevels.info, "sysfs/handlers/gpu")
+
 do
   local function mknew(addr)
     local proxy = component.proxy(addr)
