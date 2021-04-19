@@ -99,6 +99,7 @@ do
   k.log(k.loglevels.info, "Registering components")
   for k, v in component.list() do
     computer.pushSignal("component_added", k, v)
+    repeat local x = computer.pullSignal() until x == "component_added"
   end
 end
 

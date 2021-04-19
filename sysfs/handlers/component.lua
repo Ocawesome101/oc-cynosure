@@ -5,11 +5,19 @@ k.log(k.loglevels.info, "sysfs/handlers/component")
 do
   local n = {}
   local gpus, screens = {}, {}
+  gpus[k.logio.gpu] = true
+  screens[k.logio.gpu.getScreen()] = true 
 
   local function update_ttys(a, c)
     if c == "gpu" then
+      if gpus[a] ~= nil then
+        return
+      end
       gpus[a] = false
     elseif c == "screen" then
+      if screens[a] ~= nil then
+        return
+      end
       screens[a] = false
     end
 
@@ -19,7 +27,7 @@ do
           if not sv then
             k.create_tty(gk, sk)
             gpus[gk] = true
-            screens[vk] = true
+            screens[sk] = true
             break
           end
         end
@@ -27,8 +35,10 @@ do
     end
   end
 
-  local function added(addr, ctype)
+  local function added(_, addr, ctype)
     n[ctype] = n[ctype] or 0
+
+    k.log(k.loglevels.info, "Detected component:", addr .. ", type", ctype)
     
     local path = "/sys/components/by-address/" .. addr
     local path2 = "/sys/components/by-type/" .. ctype .. "/" .. n[ctype]
@@ -50,7 +60,7 @@ do
     return s
   end
 
-  local function removed(addr, ctype)
+  local function removed(_, addr, ctype)
     local path = "/sys/components/by-address/" .. addr
     local path2 = "/sys/components/by-type/" .. addr
     k.sysfs.unregister(path2)

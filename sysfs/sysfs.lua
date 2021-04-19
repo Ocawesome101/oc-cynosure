@@ -118,7 +118,7 @@ do
     
     for k, v in pairs(n) do
       if k ~= "dir" then
-        f[#f+1] = k
+        f[#f+1] = tostring(k)
       end
     end
     
@@ -202,12 +202,12 @@ do
   function api.unregister(path)
     checkArg(1, path, "string")
     
-    local segments = fs.split(path)
+    local segments = k.fs.split(path)
     local ppath = table.concat(segments, "/", 1, #segments - 1)
     
     local node = segments[#segments]
     if node == "dir" then
-      return nil, fs.errors.file_not_found
+      return nil, k.fs.errors.file_not_found
     end
 
     local n, e = find(ppath)

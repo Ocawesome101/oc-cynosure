@@ -16,4 +16,7 @@ do
   end
 
   k.sysfs.handle("tty", mknew)
+
+  k.sysfs.register("tty", k.logio, "/dev/console")
+  k.sysfs.register("tty", k.logio, "/dev/tty0")
 end

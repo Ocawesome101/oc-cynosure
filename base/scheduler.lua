@@ -28,7 +28,8 @@ do
     processes[new.pid] = new
     
     if k.sysfs then
-      assert(k.sysfs.register(k.sysfs.types.process, new, "/proc/"..new.pid))
+      assert(k.sysfs.register(k.sysfs.types.process, new, "/proc/"..math.floor(
+        new.pid)))
     end
     
     return new
@@ -149,6 +150,10 @@ do
             pcall(v.close, v)
           end
           
+          local ppt = "/proc/" .. math.floor(proc.pid)
+          if k.sysfs then
+            k.sysfs.unregister(ppt)
+          end
           processes[proc.pid] = nil
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time

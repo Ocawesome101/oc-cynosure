@@ -343,6 +343,10 @@ do
 
   function _stream:key_down(...)
     local signal = table.pack(...)
+
+    if signal[3] == 0 and signal[4] == 0 then
+      return
+    end
     
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
@@ -470,12 +474,14 @@ do
       return new:key_down(...)
     end)
 
+    
     -- register the TTY with the sysfs
     if k.sysfs then
       k.sysfs.register(k.sysfs.types.tty, new, "/dev/tty"..ttyn)
       new.ttyn = ttyn
-      ttyn = ttyn + 1
     end
+    
+    ttyn = ttyn + 1
     
     return new
   end

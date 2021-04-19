@@ -33,16 +33,13 @@ do
           end}
         end
       end,
-      __pairs = function(t)
-        local iter = pairs(t)
-        return function()
-          return (iter())
-        end
+      __pairs = function()
+        return pairs(proc.handles)
       end
     }
     mt.__ipairs = mt.__pairs
 
-    setmetatable(base, mt)
+    setmetatable(base.handles, mt)
 
     return base
   end
