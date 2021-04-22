@@ -15,7 +15,8 @@ do
       name = "root",
       home = "/root",
       shell = "/bin/rc",
-      acls = 8191
+      acls = 8191,
+      pass = k.util.to_hex(k.sha3.sha256("root")),
     }
   }
 
@@ -32,7 +33,7 @@ do
     checkArg(1, uid, "number")
     checkArg(2, pass, "string")
     
-    pass = k.util.to_hex(pass)
+    pass = k.util.to_hex(k.sha3.sha256(pass))
     
     local udata = passwd[uid]
     

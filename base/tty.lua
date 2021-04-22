@@ -283,7 +283,7 @@ do
           self.esc = ""
 
           local separator, raw_args, code = esc:match(
-            "\27([%[%(])([%d;]*)([a-zA-Z])")
+            "\27([%[%?])([%d;]*)([a-zA-Z])")
           raw_args = raw_args or "0"
           
           local args = {}
