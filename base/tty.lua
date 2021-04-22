@@ -344,6 +344,10 @@ do
   function _stream:key_down(...)
     local signal = table.pack(...)
 
+    if not self.keyboards[signal[2]] then
+      return
+    end
+
     if signal[3] == 0 and signal[4] == 0 then
       return
     end

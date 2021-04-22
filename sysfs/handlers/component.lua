@@ -5,20 +5,14 @@ k.log(k.loglevels.info, "sysfs/handlers/component")
 do
   local n = {}
   local gpus, screens = {}, {}
-  gpus[k.logio.gpu] = true
+  gpus[k.logio.gpu.address] = true
   screens[k.logio.gpu.getScreen()] = true 
 
   local function update_ttys(a, c)
     if c == "gpu" then
-      if gpus[a] ~= nil then
-        return
-      end
-      gpus[a] = false
+      gpus[a] = gpus[a] or false
     elseif c == "screen" then
-      if screens[a] ~= nil then
-        return
-      end
-      screens[a] = false
+      screens[a] = screens[a] or false
     else
       return
     end
@@ -32,7 +26,7 @@ do
             k.create_tty(gk, sk)
             gpus[gk] = true
             screens[sk] = true
-            break
+            gv, sv = true, true
           end
         end
       end
