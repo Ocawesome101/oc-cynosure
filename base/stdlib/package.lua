@@ -129,6 +129,7 @@ do
     k.userspace.component = nil
     k.userspace.computer = nil
     k.userspace.unicode = nil
+
     k.userspace.package.loaded.component = {}
     
     for f,v in pairs(component) do
@@ -155,5 +156,7 @@ do
     local ufs = k.userspace.package.loaded.filesystem
     ufs.mount = wrap(k.fs.api.mount, perms.user.MOUNT)
     ufs.umount = wrap(k.fs.api.umount, perms.user.MOUNT)
+
+    k.userspace.package.loaded.users = k.util.copy_table(k.security.users)
   end)
 end

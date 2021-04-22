@@ -352,6 +352,10 @@ do
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
     local ch = signal[3]
     local tw = char
+
+    if ch == 0 and not aliases[signal[4]] then
+      return
+    end
     
     if #char == 1 and ch == 0 then
       char = ""
@@ -393,16 +397,16 @@ do
   function _stream:read(n)
     checkArg(1, n, "number")
 
-    if self.attributes.line then
+    --[[if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n)
           and not self.rb:find("\4") do
         coroutine.yield()
       end
-    else
+    else--]]
       while #self.rb < n and (self.attributes.raw or not self.rb:find("\4")) do
         coroutine.yield()
       end
-    end
+    --end
 
     if self.rb:find("\4") then
       self.rb = ""
@@ -473,7 +477,6 @@ do
     new.key_handler_id = k.event.register("key_down", function(...)
       return new:key_down(...)
     end)
-
     
     -- register the TTY with the sysfs
     if k.sysfs then

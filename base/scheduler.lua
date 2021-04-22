@@ -108,6 +108,8 @@ do
       --k.log(k.loglevels.info, min_timeout)
       
       local sig = table.pack(pullSignal(min_timeout))
+      k.event.handle(sig)
+
       for k, v in pairs(processes) do
         if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
             not (v.stopped or going_to_run[v.pid] or v.dead) then
@@ -125,8 +127,8 @@ do
         current = i
       
         if #proc.queue > 0 then -- the process has queued signals
-          proc:push_signal(table.unpack(sig))
-          psig = proc:pull_signal()
+          proc:push_signal(table.unpack(sig)) -- we don't want to drop this signal
+          psig = proc:pull_signal() -- pop a signal
         end
         
         local start_time = computer.uptime()

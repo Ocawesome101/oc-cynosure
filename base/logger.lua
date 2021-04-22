@@ -18,7 +18,7 @@ do
     local msg = ""
   
     for i=1, args.n, 1 do
-      msg = string.format("%s%s ", msg, tostring(args[i]))
+      msg = string.format("%s%s%s", msg, tostring(args[i]), i < args.n and " " or "")
     end
     return msg
   end
@@ -46,8 +46,7 @@ do
     end
   end
 
-  local raw_pullsignal = computer.pullSignalOld
-  computer.pullSignalOld = nil
+  local raw_pullsignal = computer.pullSignal
   
   function k.panic(...)
     local msg = safe_concat(...)

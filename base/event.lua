@@ -4,22 +4,12 @@ do
   local event = {}
   local handlers = {}
 
-  local pull = computer.pullSignal
-  computer.pullSignalOld = pull
-
-  function computer.pullSignal(timeout)
-    checkArg(1, timeout, "number", "nil")
-    
-    local sig = table.pack(pull(timeout))
-    if sig.n == 0 then return nil end
-    
+  function event.handle(sig)
     for _, v in pairs(handlers) do
       if v.signal == sig[1] then
         v.callback(table.unpack(sig))
       end
     end
-    
-    return table.unpack(sig)
   end
 
   local n = 0

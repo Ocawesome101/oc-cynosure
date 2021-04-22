@@ -14,6 +14,8 @@ do
     checkArg(1, pname, "string", "nil")
 
     pname = pname or k.scheduler.info().name
+
+    local n = math.random(1, 999999999)
     open[n] = pname
     
     return n
@@ -26,7 +28,9 @@ do
       return nil, "bad file descriptor"
     end
     
-    k.log(open[n] .. ":", ...)
+    k.log(k.loglevels.info, open[n] .. ":", ...)
+
+    return true
   end
 
   function syslog.close(n)
@@ -37,6 +41,8 @@ do
     end
     
     open[n] = nil
+
+    return true
   end
 
   k.hooks.add("sandbox", function()
