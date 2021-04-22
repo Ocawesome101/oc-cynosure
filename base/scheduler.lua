@@ -22,6 +22,7 @@ do
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
+      env = parent.env
     }
     
     new:add_thread(args.func)
@@ -64,7 +65,8 @@ do
         io = proc.io,
         self = proc,
         handles = proc.handles,
-        coroutine = proc.coroutine
+        coroutine = proc.coroutine,
+        env = proc.env
       }
     end
     

@@ -88,6 +88,7 @@ do
       coroutine = {},
       cputime = 0,
       deadline = 0,
+      env = setmetatable({}, {__index = args.env})
     }, proc_mt)
     
     args.stdin, args.stdout, args.stderr,
