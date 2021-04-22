@@ -29,5 +29,6 @@ end
 --#include "base/scheduler.lua"
 --#include "sysfs/sysfs.lua"
 --#include "includes.lua"
+--#include "base/passwd_init.lua"
 --#include "base/load_init.lua"
 k.panic("Premature exit!")

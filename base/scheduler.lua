@@ -17,10 +17,10 @@ do
     local new = k.create_process {
       name = args.name,
       parent = parent.pid or 0,
-      stdin = parent.stdin or args.stdin,
-      stdout = parent.stdout or args.stdout,
-      input = args.input or parent.stdin,
-      output = args.output or parent.stdout,
+      stdin = parent.stdin or (io and io.input()) or args.stdin,
+      stdout = parent.stdout or (io and io.output()) or args.stdout,
+      input = args.input or parent.stdin or (io and io.input()),
+      output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
     }
     
@@ -124,7 +124,7 @@ do
 
       for i, proc in ipairs(to_run) do
         local psig = sig
-        current = i
+        current = proc.pid
       
         if #proc.queue > 0 then -- the process has queued signals
           proc:push_signal(table.unpack(sig)) -- we don't want to drop this signal

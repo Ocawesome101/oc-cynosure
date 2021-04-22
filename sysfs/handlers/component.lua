@@ -19,12 +19,16 @@ do
         return
       end
       screens[a] = false
+    else
+      return
     end
 
     for gk, gv in pairs(gpus) do
       if not gv then
         for sk, sv in pairs(screens) do
           if not sv then
+            k.log(k.loglevels.info, string.format(
+              "Creating TTY on [%s:%s]", gk:sub(1, 8), (sk:sub(1, 8))))
             k.create_tty(gk, sk)
             gpus[gk] = true
             screens[sk] = true

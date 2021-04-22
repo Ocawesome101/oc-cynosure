@@ -14,7 +14,7 @@ do
     [0] = {
       name = "root",
       home = "/root",
-      shell = "/bin/rc",
+      shell = "/bin/sh",
       acls = 8191,
       pass = k.util.to_hex(k.sha3.sha256("root")),
     }
@@ -23,7 +23,7 @@ do
   function api.prime(data)
     checkArg(1, data, "table")
  
-    k.userspace.package.loaded.users.prime = nil
+    api.prime = nil
     passwd = data
     
     return true
@@ -55,8 +55,8 @@ do
     checkArg(4, pname, "string", "nil")
     checkArg(5, wait, "boolean", "nil")
     
-    if not k.acl.user_has_permission(k.scheduler.info().owner,
-        k.acl.permissions.user.SUDO) then
+    if not k.security.acl.user_has_permission(k.scheduler.info().owner,
+        k.security.acl.permissions.user.SUDO) then
       return nil, "permission denied: no permission"
     end
     
