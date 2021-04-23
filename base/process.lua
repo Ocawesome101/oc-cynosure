@@ -78,7 +78,7 @@ do
         input = args.input or args.stdin or {},
         stdout = args.stdout or {},
         output = args.output or args.stdout or {},
-        stderr = args.stderr or {}
+        stderr = args.stderr or args.stdout or {}
       },
       queue = {},
       threads = {},

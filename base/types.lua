@@ -77,7 +77,7 @@ do
     if not check(...) then
       local msg = string.format("bad argument #%d (%s expected, got %s)",
                                 n, table.concat(table.pack(...), " or "), have)
-      error(msg, 2)
+      error(msg, 3)
     end
   end
 end

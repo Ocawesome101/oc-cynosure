@@ -125,5 +125,56 @@ do
     if not a then error(..., 0) else return a, ... end
   end
 
+  -- pipes for IPC and shells and things
+  do
+    local _pipe = {}
+
+    function _pipe:read(n)
+      if self.closed then
+        return nil
+      end
+      while #self.rb < n and not self.closed do
+        if self.from ~= 0 then
+          k.scheduler.info().data.self.resume_next = self.from
+        end
+        coroutine.yield()
+      end
+      local data = self.rb:sub(1, n)
+      self.rb = self.rb:sub(n + 1)
+      return data
+    end
+
+    function _pipe:write(dat)
+      if self.closed then
+        return nil
+      end
+      self.rb = self.rb .. dat
+      return true
+    end
+
+    function _pipe:flush()
+      return true
+    end
+
+    function _pipe:close()
+      self.closed = true
+      return true
+    end
+
+    function util.make_pipe()
+      return setmetatable({
+        from = 0, -- the process providing output
+        to = 0, -- the process reading input
+        rb = "",
+      }, {__index = _pipe})
+    end
+
+    k.hooks.add("sandbox", function()
+      k.userspace.package.loaded.pipe = {
+        create = util.make_pipe
+      }
+    end)
+  end
+
   k.util = util
 end

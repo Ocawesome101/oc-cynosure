@@ -87,6 +87,17 @@ do
     return true
   end
 
+  -- XXX: this is specifically for kernel use ***only*** and userspace does NOT
+  -- XXX: get this function.  it is incredibly dangerous and should be used with
+  -- XXX: the utmost caution.
+  function api.get(pid)
+    checkArg(1, pid, "number")
+    if not processes[pid] then
+      return nil, "no such process"
+    end
+    return processes[pid]
+  end
+
   local pullSignal = computer.pullSignal
   function api.loop()
     while next(processes) do
@@ -147,7 +158,16 @@ do
           end
           
           err = err or "died"
-          k.log(k.loglevels.warn, "process died: ", proc.pid, exit, err)
+          -- if we can, put the process death info on the same I/O stream that
+          -- belonged to the process that died
+          if proc.io.stderr.write then
+            local old_logio = k.logio
+            k.logio = proc.io.stderr
+            k.log(k.loglevels.info, "process died:", proc.pid, exit, err)
+            k.logio = old_logio
+          else
+            k.log(k.loglevels.warn, "process died:", proc.pid, exit, err)
+          end
           computer.pushSignal("process_died", proc.pid, exit, err)
           
           for k, v in pairs(proc.handles) do
@@ -189,7 +209,8 @@ do
         stdin = args.stdin,
         stdout = args.stdout,
         input = args.input,
-        output = args.output
+        output = args.output,
+        stderr = args.stderr,
       }
       
       local new = api.spawn(sanitized)

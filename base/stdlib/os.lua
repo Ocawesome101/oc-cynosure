@@ -5,19 +5,19 @@ do
     error("os.execute must be implemented by userspace", 0)
   end
 
-  function os.setenv(k, v)
+  function os.setenv(K, v)
     local info = k.scheduler.info()
-    info.env[k] = v
+    info.data.env[K] = v
   end
 
-  function os.getenv(k)
+  function os.getenv(K)
     local info = k.scheduler.info()
     
-    if not k then
-      return info.env
+    if not K then
+      return info.data.env
     end
 
-    return info.env[k]
+    return info.data.env[K]
   end
 
   function os.sleep(n)
