@@ -12,13 +12,15 @@ do
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
     
-    local parent = processes[current or 0] or {}
+    local parent = processes[current or 0] or
+      (api.info() and api.info().data.self) or {}
     
     local new = k.create_process {
       name = args.name,
       parent = parent.pid or 0,
       stdin = parent.stdin or (io and io.input()) or args.stdin,
       stdout = parent.stdout or (io and io.output()) or args.stdout,
+      stderr = parent.stderr or (io and io.stderr) or args.stderr,
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,

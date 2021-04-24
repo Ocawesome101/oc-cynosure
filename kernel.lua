@@ -38,7 +38,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.04.23"
+  k._VERSION = "2021.04.24"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -1258,6 +1258,8 @@ do
   end
 
   k.security.acl = acl
+  
+  k.hooks.add("userspace", function()end)
 end
 
 
@@ -1331,7 +1333,8 @@ do
   fs.types = {
     file = 1,
     directory = 2,
-    link = 3
+    link = 3,
+    special = 4
   }
 
   -- This VFS should support directory overlays, fs mounting, and directory
@@ -1444,6 +1447,7 @@ do
     
     return {
       permissions = self:info().read_only and 365 or 511,
+      type        = self.node.isDirectory(file) and fs.types.directory or fs.types.file,
       isDirectory = self.node.isDirectory(file),
       owner       = -1,
       group       = -1,
@@ -2408,6 +2412,8 @@ do
     local ufs = k.userspace.package.loaded.filesystem
     ufs.mount = wrap(k.fs.api.mount, perms.user.MOUNT)
     ufs.umount = wrap(k.fs.api.umount, perms.user.MOUNT)
+    
+    k.userspace.package.loaded.filetypes = k.util.copy_table(k.fs.types)
 
     k.userspace.package.loaded.users = k.util.copy_table(k.security.users)
   end)
@@ -2834,7 +2840,7 @@ do
     }, proc_mt)
     
     args.stdin, args.stdout, args.stderr,
-                    args.input, args.output = nil, nil, nil
+                  args.input, args.output = nil, nil, nil, nil, nil
     
     for k, v in pairs(args) do
       new[k] = v
@@ -2875,13 +2881,15 @@ do
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
     
-    local parent = processes[current or 0] or {}
+    local parent = processes[current or 0] or
+      (api.info() and api.info().data.self) or {}
     
     local new = k.create_process {
       name = args.name,
       parent = parent.pid or 0,
       stdin = parent.stdin or (io and io.input()) or args.stdin,
       stdout = parent.stdout or (io and io.output()) or args.stdout,
+      stderr = parent.stderr or (io and io.stderr) or args.stderr,
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
@@ -3229,7 +3237,8 @@ do
         group = 0,
         lastModified = 0,
         size = 0,
-        isDirectory = not not n.dir
+        isDirectory = not not n.dir,
+        type = n.dir and k.fs.types.directory or k.fs.types.special
       }
     else
       return nil, e

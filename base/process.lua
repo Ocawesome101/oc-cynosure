@@ -92,7 +92,7 @@ do
     }, proc_mt)
     
     args.stdin, args.stdout, args.stderr,
-                    args.input, args.output = nil, nil, nil
+                  args.input, args.output = nil, nil, nil, nil, nil
     
     for k, v in pairs(args) do
       new[k] = v
