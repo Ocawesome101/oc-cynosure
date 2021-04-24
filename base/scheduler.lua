@@ -108,11 +108,9 @@ do
       local going_to_run = {}
       local min_timeout = math.huge
     
-      for k, v in pairs(processes) do
+      for _, v in pairs(processes) do
         if not v.stopped then
-          if v.deadline - computer.uptime() < min_timeout then
-            min_timeout = v.deadline - computer.uptime()
-          end
+          min_timeout = math.min(min_timeout, v.deadline - computer.uptime())
         end
       
         if min_timeout <= 0 then
@@ -126,7 +124,7 @@ do
       local sig = table.pack(pullSignal(min_timeout))
       k.event.handle(sig)
 
-      for k, v in pairs(processes) do
+      for _, v in pairs(processes) do
         if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
             not (v.stopped or going_to_run[v.pid] or v.dead) then
           to_run[#to_run + 1] = v
@@ -151,9 +149,9 @@ do
         end
         
         local start_time = computer.uptime()
-        local ok, err = proc:resume(table.unpack(psig))
+        local aok, ok, err = proc:resume(table.unpack(psig))
         
-        if proc.dead or ok == "__internal_process_exit" or not ok then
+        if proc.dead or ok == "__internal_process_exit" or not aok then
           local exit = err or 0
         
           if type(err) == "string" then
@@ -190,8 +188,8 @@ do
           processes[proc.pid] = nil
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time
-          --proc.deadline = computer.uptime() + (tonumber(ok) or tonumber(err)
-          --  or math.huge)
+          proc.deadline = computer.uptime() + (tonumber(ok) or tonumber(err)
+            or math.huge)
         end
       end
     end
@@ -271,8 +269,7 @@ do
       
       repeat
         -- busywait until the process dies
-        -- k.log(k.loglevels.info, "yield await", pid)
-        signal = table.pack(coroutine.yield(0))
+        signal = table.pack(coroutine.yield())
       until signal[1] == "process_died" and signal[2] == pid
       
       return signal[3], signal[4]

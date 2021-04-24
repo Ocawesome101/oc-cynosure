@@ -11,8 +11,9 @@ do
   }
 
   function process:resume(...)
-    for k, v in pairs(self.threads) do
-      local result = table.pack(v:resume(...))
+    local result
+    for k, v in ipairs(self.threads) do
+      result = result or table.pack(v:resume(...))
   
       if v:status() == "dead" then
         table.remove(self.threads, k)
@@ -22,14 +23,6 @@ do
         
           return nil, result[2]
         end
-      elseif type(result[1]) == "number" then
-        self.deadline = math.min(self.deadline, computer.uptime() + number)
-      elseif self.deadline <= computer.uptime() then
-        self.deadline = math.huge
-      end
-
-      if #self.threads == 1 or result[1] == "__internal_process_exit" then
-        return table.unpack(result)
       end
     end
 
@@ -37,7 +30,7 @@ do
       self.dead = true
     end
     
-    return true
+    return table.unpack(result)
   end
 
   local id = 0
