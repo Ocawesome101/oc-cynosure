@@ -30,4 +30,8 @@ do
 
     return true
   end
+
+  function os.exit(n)
+    coroutine.yield("__internal_process_exit", n)
+  end
 end

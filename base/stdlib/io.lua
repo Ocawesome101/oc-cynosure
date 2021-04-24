@@ -7,21 +7,21 @@ do
   local im = {stdin = 0, stdout = 1, stderr = 2}
  
   local mt = {
-    __index = function(t, k)
+    __index = function(t, f)
       if not k.scheduler then return k.logio end
       local info = k.scheduler.info()
   
-      if info and info.data and info.data.io and info.data.io[k] then
-        return info.data.io[k]
+      if info and info.data and info.data.io then
+        return info.data.io[f]
       end
       
       return nil
     end,
-    __newindex = function(t, k, v)
+    __newindex = function(t, f, v)
       local info = k.scheduler.info()
       if not info then return nil end
-      info.data.io[k] = v
-      info.handles[im[k]] = v
+      info.data.io[f] = v
+      info.handles[im[f]] = v
     end
   }
 
@@ -140,6 +140,9 @@ do
   end
 
   setmetatable(io, mt)
+  k.hooks.add("sandbox", function()
+    setmetatable(k.userspace.io, mt)
+  end)
 
   function _G.print(...)
     local args = table.pack(...)

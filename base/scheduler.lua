@@ -20,7 +20,7 @@ do
       parent = parent.pid or 0,
       stdin = parent.stdin or (io and io.input()) or args.stdin,
       stdout = parent.stdout or (io and io.output()) or args.stdout,
-      stderr = parent.stderr or (io and io.stderr) or args.stderr,
+      stderr = args.stderr or parent.stderr or (io and io.stderr),
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
@@ -93,7 +93,8 @@ do
   -- XXX: get this function.  it is incredibly dangerous and should be used with
   -- XXX: the utmost caution.
   function api.get(pid)
-    checkArg(1, pid, "number")
+    checkArg(1, pid, "number", current and "nil")
+    pid = pid or current
     if not processes[pid] then
       return nil, "no such process"
     end
@@ -142,7 +143,9 @@ do
         current = proc.pid
       
         if #proc.queue > 0 then -- the process has queued signals
-          proc:push_signal(table.unpack(sig)) -- we don't want to drop this signal
+          -- we don't want to drop this signal
+          proc:push_signal(table.unpack(sig))
+          
           psig = proc:pull_signal() -- pop a signal
         end
         

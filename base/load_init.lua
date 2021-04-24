@@ -132,7 +132,8 @@ do
     name = "init",
     func = ok,
     input = ios,
-    output = ios
+    output = ios,
+    stderr = ios
   }
 
   k.log(k.loglevels.info, "Starting scheduler loop")
