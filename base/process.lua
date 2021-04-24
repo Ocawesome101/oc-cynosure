@@ -15,13 +15,21 @@ do
       local result = table.pack(v:resume(...))
   
       if v:status() == "dead" then
-        self.threads[k] = nil
+        table.remove(self.threads, k)
       
         if not result[1] then
           self:push_signal("thread_died", v.id)
         
           return nil, result[2]
         end
+      elseif type(result[1]) == "number" then
+        self.deadline = math.min(self.deadline, computer.uptime() + number)
+      elseif self.deadline <= computer.uptime() then
+        self.deadline = math.huge
+      end
+
+      if #self.threads == 1 or result[1] == "__internal_process_exit" then
+        return table.unpack(result)
       end
     end
 

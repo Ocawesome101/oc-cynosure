@@ -142,8 +142,9 @@ do
         local psig = sig
         current = proc.pid
       
-        if #proc.queue > 0 then -- the process has queued signals
-          -- we don't want to drop this signal
+        if #proc.queue > 0 then
+          -- the process has queued signals
+          -- but we don't want to drop this signal
           proc:push_signal(table.unpack(sig))
           
           psig = proc:pull_signal() -- pop a signal
@@ -163,15 +164,18 @@ do
           end
           
           err = err or "died"
-          -- if we can, put the process death info on the same I/O stream that
-          -- belonged to the process that died
-          if proc.io.stderr.write then
-            local old_logio = k.logio
-            k.logio = proc.io.stderr
-            k.log(k.loglevels.info, "process died:", proc.pid, exit, err)
-            k.logio = old_logio
-          else
-            k.log(k.loglevels.warn, "process died:", proc.pid, exit, err)
+          if k.cmdline.log_process_death and
+              k.cmdline.log_process_death ~= 0 then
+            -- if we can, put the process death info on the same stderr stream
+            -- belonging to the process that died
+            if proc.io.stderr and proc.io.stderr.write then
+              local old_logio = k.logio
+              k.logio = proc.io.stderr
+              k.log(k.loglevels.info, "process died:", proc.pid, exit, err)
+              k.logio = old_logio
+            else
+              k.log(k.loglevels.warn, "process died:", proc.pid, exit, err)
+            end
           end
           computer.pushSignal("process_died", proc.pid, exit, err)
           
@@ -186,7 +190,8 @@ do
           processes[proc.pid] = nil
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time
-          proc.deadline = computer.uptime() + (tonumber(ok) or math.huge)
+          --proc.deadline = computer.uptime() + (tonumber(ok) or tonumber(err)
+          --  or math.huge)
         end
       end
     end
@@ -265,7 +270,9 @@ do
       end
       
       repeat
-        signal = table.pack(coroutine.yield())
+        -- busywait until the process dies
+        -- k.log(k.loglevels.info, "yield await", pid)
+        signal = table.pack(coroutine.yield(0))
       until signal[1] == "process_died" and signal[2] == pid
       
       return signal[3], signal[4]

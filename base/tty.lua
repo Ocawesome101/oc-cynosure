@@ -387,7 +387,7 @@ do
       elseif ch == 8 then
         tw = "\27[D \27[D"
         char = ""
-        self.rb = self.rb:sub(1, -1)
+        self.rb = self.rb:sub(1, -2)
       end
     end
     
@@ -401,16 +401,16 @@ do
   function _stream:read(n)
     checkArg(1, n, "number")
 
-    --[[if self.attributes.line then
+    if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n)
           and not self.rb:find("\4") do
         coroutine.yield()
       end
-    else--]]
+    else
       while #self.rb < n and (self.attributes.raw or not self.rb:find("\4")) do
         coroutine.yield()
       end
-    --end
+    end
 
     if self.rb:find("\4") then
       self.rb = ""

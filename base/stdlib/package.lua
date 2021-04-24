@@ -142,7 +142,11 @@ do
       setArchitecture = wrap(computer.setArchitecture, perms.user.SETARCH),
       addUser = wrap(computer.addUser, perms.user.MANAGE_USERS),
       removeUser = wrap(computer.removeUser, perms.user.MANAGE_USERS),
-      setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR)
+      setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR),
+      pullSignal = coroutine.yield,
+      pushSignal = function(...)
+        return k.scheduler.info().data.self:push_signal(...)
+      end
     }
     
     for f, v in pairs(computer) do
