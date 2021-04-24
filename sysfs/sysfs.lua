@@ -93,7 +93,8 @@ do
         group = 0,
         lastModified = 0,
         size = 0,
-        isDirectory = not not n.dir
+        isDirectory = not not n.dir,
+        type = n.dir and k.fs.types.directory or k.fs.types.special
       }
     else
       return nil, e

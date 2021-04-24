@@ -20,7 +20,8 @@ do
   fs.types = {
     file = 1,
     directory = 2,
-    link = 3
+    link = 3,
+    special = 4
   }
 
   -- This VFS should support directory overlays, fs mounting, and directory
@@ -133,6 +134,7 @@ do
     
     return {
       permissions = self:info().read_only and 365 or 511,
+      type        = self.node.isDirectory(file) and fs.types.directory or fs.types.file,
       isDirectory = self.node.isDirectory(file),
       owner       = -1,
       group       = -1,

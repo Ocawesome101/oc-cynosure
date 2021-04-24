@@ -55,4 +55,6 @@ do
   end
 
   k.security.acl = acl
+  
+  k.hooks.add("userspace", function()end)
 end

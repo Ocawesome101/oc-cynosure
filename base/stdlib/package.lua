@@ -156,6 +156,8 @@ do
     local ufs = k.userspace.package.loaded.filesystem
     ufs.mount = wrap(k.fs.api.mount, perms.user.MOUNT)
     ufs.umount = wrap(k.fs.api.umount, perms.user.MOUNT)
+    
+    k.userspace.package.loaded.filetypes = k.util.copy_table(k.fs.types)
 
     k.userspace.package.loaded.users = k.util.copy_table(k.security.users)
   end)
