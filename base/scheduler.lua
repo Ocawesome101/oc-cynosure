@@ -201,6 +201,31 @@ do
   end
 
   k.scheduler = api
+
+  k.hooks.add("shutdown", function()
+    if not k.is_shutting_down then
+      return
+    end
+
+    k.log(k.loglevels.info, "shutdown: sending shutdown signal")
+
+    for pid, proc in pairs(processes) do
+      proc:resume("shutdown")
+    end
+
+    k.log(k.loglevels.info, "shutdown: waiting 1s for processes to exit")
+    os.sleep(1)
+
+    k.log(k.loglevels.info, "shutdown: killing all processes")
+
+    for pid, proc in pairs(processes) do
+      if pid ~= current then -- hack to make sure shutdown carries on
+        proc.dead = true
+      end
+    end
+
+    coroutine.yield(0) -- clean up
+  end)
   
   -- sandbox hook for userspace 'process' api
   k.hooks.add("sandbox", function()
