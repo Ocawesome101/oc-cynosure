@@ -68,6 +68,12 @@ do
       func = func,
       name = pname or tostring(func),
       owner = uid,
+      env = {
+        USER = passwd[uid].name,
+        UID = tostring(uid),
+        SHELL = passwd[uid].shell,
+        HOME = passwd[uid].home,
+      }
     }
     
     local p = k.scheduler.spawn(new)

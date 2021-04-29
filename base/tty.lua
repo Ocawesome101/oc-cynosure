@@ -300,6 +300,13 @@ do
           wrap_cursor(self)
         end
       else
+        -- handle BEL and \r
+        if str:find("\a") then
+          computer.beep()
+        end
+        str = str:gsub("\a", "")
+        str = str:gsub("\r", "\27[G")
+
         local next_esc = str:find("\27")
         
         if next_esc then

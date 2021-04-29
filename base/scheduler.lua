@@ -24,7 +24,8 @@ do
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
-      env = parent.env
+      env = setmetatable(args.env or {}, {__index = parent.env,
+        __metatable = {}})
     }
     
     new:add_thread(args.func)
