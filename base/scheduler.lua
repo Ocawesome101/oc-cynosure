@@ -27,6 +27,9 @@ do
       env = setmetatable(args.env or {}, {__index = parent.env,
         __metatable = {}})
     }
+
+    -- this is kind of ugly, but it works
+    new.env.TERM = new.env.TERM or "cynosure"
     
     new:add_thread(args.func)
     processes[new.pid] = new

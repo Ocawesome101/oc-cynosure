@@ -88,7 +88,7 @@ do
     
     local data = handle:read("a")
     handle:close()
-    
+
     return load(data, "="..file, "bt", k.userspace or _G)
   end
 
@@ -164,5 +164,23 @@ do
     k.userspace.package.loaded.filetypes = k.util.copy_table(k.fs.types)
 
     k.userspace.package.loaded.users = k.util.copy_table(k.security.users)
+
+    local blacklist = {}
+    for k in pairs(k.userspace.package.loaded) do blacklist[k] = true end
+
+    local shadow = k.userspace.package.loaded
+    k.userspace.package.loaded = setmetatable({}, {
+      __newindex = function(t, k, v)
+        if shadow[k] and blacklist[k] then
+          error("cannot override protected library " .. k, 0)
+        else
+          shadow[k] = v
+        end
+      end,
+      __index = shadow,
+      __pairs = shadow,
+      __ipairs = shadow,
+      __metatable = {}
+    })
   end)
 end
