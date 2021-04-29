@@ -130,7 +130,7 @@ do
     local _pipe = {}
 
     function _pipe:read(n)
-      if self.closed then
+      if self.closed and #self.rb == 0 then
         return nil
       end
       while #self.rb < n and not self.closed do
