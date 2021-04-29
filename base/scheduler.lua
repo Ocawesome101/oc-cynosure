@@ -150,9 +150,10 @@ do
         
         local start_time = computer.uptime()
         local aok, ok, err = proc:resume(table.unpack(psig))
-        
+
         if proc.dead or ok == "__internal_process_exit" or not aok then
           local exit = err or 0
+          err = err or ok
         
           if type(err) == "string" then
             exit = 127
@@ -175,6 +176,7 @@ do
               k.log(k.loglevels.warn, "process died:", proc.pid, exit, err)
             end
           end
+          
           computer.pushSignal("process_died", proc.pid, exit, err)
           
           for k, v in pairs(proc.handles) do

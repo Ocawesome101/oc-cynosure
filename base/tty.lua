@@ -385,9 +385,13 @@ do
         char = "\n"
         tw = "\n"
       elseif ch == 8 then
-        tw = "\27[D \27[D"
+        if #self.rb > 0 then
+          tw = "\27[D \27[D"
+          self.rb = self.rb:sub(1, -2)
+        else
+          tw = ""
+        end
         char = ""
-        self.rb = self.rb:sub(1, -2)
       end
     end
     

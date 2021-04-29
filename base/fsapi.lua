@@ -132,7 +132,7 @@ do
       return nil, fs.errors.file_not_found
     end
     
-    return {
+    local info = {
       permissions = self:info().read_only and 365 or 511,
       type        = self.node.isDirectory(file) and fs.types.directory or fs.types.file,
       isDirectory = self.node.isDirectory(file),
@@ -141,6 +141,14 @@ do
       lastModified= self.node.lastModified(file),
       size        = self.node.size(file)
     }
+
+    if file:sub(1, -4) == ".lua" then
+      info.permissions = info.permissions | k.security.acl.permissions.file.OWNER_EXEC
+      info.permissions = info.permissions | k.security.acl.permissions.file.GROUP_EXEC
+      info.permissions = info.permissions | k.security.acl.permissions.file.OTHER_EXEC
+    end
+
+    return info
   end
 
   function _managed:touch(file, ftype)
@@ -397,10 +405,13 @@ do
 
     if node.children then
       for k in pairs(node.children) do
-        if (fs.api.stat(path.."/"..k) or n).isDirectory then
+        local info = fs.api.stat(path.."/"..k)
+        if (info or n).isDirectory then
           k = k .. "/"
         end
-        ok[#ok + 1] = k
+        if info then
+          ok[#ok + 1] = k
+        end
       end
     end
    
