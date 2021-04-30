@@ -67,11 +67,21 @@ do
   end
 
   local pid = 0
+
+  -- default signal handlers
+  local defaultHandlers = {
+    [0] = function() end,
+    [1] = function(self) self.dead = true end,
+    [2] = function(self) self.dead = true end,
+    [9] = function(self) self.dead = true end,
+    [18] = function(self) self.stopped = true end,
+  }
   
   function k.create_process(args)
     pid = pid + 1
   
-    local new = setmetatable({
+    local new
+    new = setmetatable({
       name = args.name,
       pid = pid,
       io = {
@@ -89,7 +99,24 @@ do
       coroutine = {},
       cputime = 0,
       deadline = 0,
-      env = setmetatable({}, {__index = args.env})
+      env = setmetatable({}, {__index = args.env}),
+      signal = setmetatable({}, {
+        __call = function(_, self, s)
+          -- don't block SIGSTOP or SIGCONT
+          if s == 17 or s == 19 then
+            self.stopped = s == 17
+            return true
+          end
+          -- and don't block SIGKILL, unless we're init
+          if self.pid ~= 1 and s == 9 then self.dead = true return true end
+          if self.signal[s] then
+            return self.signal[s](self)
+          else
+            return (defaultHandlers[s] or defaultHandlers[0])(self)
+          end
+        end,
+        __index = defaultHandlers
+      })
     }, proc_mt)
     
     args.stdin, args.stdout, args.stderr,

@@ -8,6 +8,15 @@ do
 
   local api = {}
 
+  api.signals = {
+    hangup = 1,
+    interrupt = 2,
+    kill = 9,
+    stop = 17,
+    kbdstop = 18,
+    continue = 19
+  }
+
   function api.spawn(args)
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
@@ -66,8 +75,6 @@ do
     
     if proc.pid == current then
       info.data = {
-        push_signal = proc.push_signal,
-        pull_signal = proc.pull_signal,
         io = proc.io,
         self = proc,
         handles = proc.handles,
@@ -79,8 +86,9 @@ do
     return info
   end
 
-  function api.kill(proc)
+  function api.kill(proc, signal)
     checkArg(1, proc, "number", "nil")
+    checkArg(2, signal, "number")
     
     proc = proc or current.pid
     
@@ -88,14 +96,15 @@ do
       return nil, "no such process"
     end
     
-    processes[proc].dead = true
+    processes[proc]:signal(signal)
     
     return true
   end
 
-  -- XXX: this is specifically for kernel use ***only*** and userspace does NOT
+  -- XXX: this is specifically for kernel use ***only*** - userspace does NOT
   -- XXX: get this function.  it is incredibly dangerous and should be used with
   -- XXX: the utmost caution.
+  api.processes = processes
   function api.get(pid)
     checkArg(1, pid, "number", current and "nil")
     pid = pid or current
@@ -104,6 +113,8 @@ do
     end
     return processes[pid]
   end
+
+
 
   local pullSignal = computer.pullSignal
   function api.loop()
@@ -257,8 +268,9 @@ do
       return new.pid
     end
     
-    function p.kill(pid)
+    function p.kill(pid, signal)
       checkArg(1, pid, "number", "nil")
+      checkArg(2, signal, "number")
       
       local cur = current
       local atmp = processes[pid]
@@ -272,7 +284,7 @@ do
         return nil, "permission denied"
       end
       
-      return api.kill(pid)
+      return api.kill(pid, signal)
     end
     
     function p.list()
@@ -307,5 +319,7 @@ do
     end
     
     p.info = api.info
+
+    p.signals = k.util.copy_table(api.signals)
   end)
 end

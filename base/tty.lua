@@ -123,8 +123,8 @@ do
     y = args[1] or y
     x = args[2] or x
   
-    self.cx = x
-    self.cy = y
+    self.cx = math.max(1, math.min(self.w, x))
+    self.cy = math.max(1, math.min(self.h, y))
     
     wrap_cursor(self)
   end
@@ -195,7 +195,7 @@ do
     local n = args[1] or 0
 
     if n == 6 then
-      self.rb = string.format("%s\27[%d;%dR", self.cy, self.cx)
+      self.rb = string.format("%s\27[%d;%dR", self.rb, self.cy, self.cx)
     end
   end
 
@@ -236,6 +236,36 @@ do
         self.attributes.line = false
       elseif n == 13 then
         self.attributes.raw = false
+      end
+    end
+  end
+
+  -- adjust signal behavior
+  -- 0: reset
+  -- 1: disable INT on ^C
+  -- 2: disable keyboard STOP on ^Z
+  -- 3: disable HUP on ^D
+  -- 11: enable INT
+  -- 12: enable STOP
+  -- 13: enable HUP
+  function control:s(args)
+    args[1] = args[1] or 0
+    for i=1, #args, 1 do
+      local n = args[i]
+      if n == 0 then
+        self.disabled = {}
+      elseif n == 1 then
+        self.disabled.C = true
+      elseif n == 2 then
+        self.disabled.Z = true
+      elseif n == 3 then
+        self.disabled.D = true
+      elseif n == 11 then
+        self.disabled.C = false
+      elseif n == 12 then
+        self.disabled.Z = false
+      elseif n == 13 then
+        self.disabled.D = false
       end
     end
   end
@@ -348,6 +378,12 @@ do
     [203] = "\27[D", -- left
   }
 
+  local sigacts = {
+    D = 1, -- hangup, TODO: check this is correct
+    C = 2, -- interrupt
+    Z = 18, -- keyboard stop
+  }
+
   function _stream:key_down(...)
     local signal = table.pack(...)
 
@@ -384,6 +420,28 @@ do
           (ch == 31 and "?") or ch
         ):upper()
     
+      if sigacts[tch] and not self.disabled[tch] and k.scheduler.processes then
+        -- fairly stupid method of determining the foreground process:
+        -- find the highest PID associated with this TTY
+        -- yeah, it's stupid, but it should work in most cases.
+        -- and where it doesn't the shell should handle it.
+        local mxp = 0
+
+        for k, v in pairs(k.scheduler.processes) do
+          if v.io.stdout.base and v.io.stdout.base.ttyn == self.ttyn then
+            mxp = math.max(mxp, k)
+          elseif v.io.stdin.base and v.io.stdin.base.ttyn == self.ttyn then
+            mxp = math.max(mxp, k)
+          elseif v.io.stderr.base and v.io.stderr.base.ttyn == self.ttyn then
+            mxp = math.max(mxp, k)
+          end
+        end
+
+        --k.log(k.loglevels.info, "sending", sigacts[tch], "to", mxp)
+
+        k.scheduler.kill(mxp, sigacts[tch])
+      end
+
       tw = "^" .. tch
     end
     
@@ -430,6 +488,7 @@ do
 
     local data = self.rb:sub(1, n)
     self.rb = self.rb:sub(n + 1)
+    -- component.invoke(component.list("ocemu")(), "log", '"'..data..'"', #data)
     return data
   end
 
@@ -466,6 +525,7 @@ do
     -- we put in this table
     local new = setmetatable({
       attributes = {echo=true,line=true,raw=false}, -- terminal attributes
+      disabled = {}, -- disabled signals
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false, -- was a partial escape sequence written
       gpu = proxy, -- the associated GPU
