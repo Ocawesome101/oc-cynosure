@@ -473,6 +473,9 @@ do
     
     if path == "/" then
       mounts["/"] = {node = device, children = {}}
+      mounted["/"] = (device.node and device.node.getLabel
+        and device.node.getLabel()) or device.node
+        and device.node.address or "unknown"
       return true
     else
       pnode, err, rpath = resolve(root)
@@ -489,8 +492,9 @@ do
       pnode.children[full] = node
     else
       pnode.children[full] = {node=device, children={}}
-      mounted[path]=(device.node and device.node.getLabel and
-        device.node.getLabel()) or "unknown"
+      mounted[path]=(device.node and device.node.getLabel
+        and device.node.getLabel()) or device.node
+        and device.node.address or "unknown"
     end
     
     return true
@@ -521,7 +525,7 @@ do
   function fs.api.mounts()
     local new = {}
     -- prevent programs from meddling with these
-    for k,v in pairs(mounted) do new[k] = v end
+    for k,v in pairs(mounted) do new[("/"..k):gsub("[\\/]+", "/")] = v end
     return new
   end
 

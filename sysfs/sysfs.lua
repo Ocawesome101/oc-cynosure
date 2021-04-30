@@ -35,7 +35,7 @@ do
     mounts = {
       dir = false,
       read = function(h)
-        if h.__has_been_read then
+        if h.__read then
           return nil
         end
 
@@ -46,7 +46,7 @@ do
           ret = string.format("%s%s\n", ret, k..": "..v)
         end
         
-        h.__has_been_read = true
+        h.__read = true
         
         return ret
       end,
@@ -156,6 +156,8 @@ do
       close = n.close or fclose
     }
   end
+
+  obj.node = {getLabel = function() return "sysfs" end}
 
   -- now here's the API
   local api = {}
