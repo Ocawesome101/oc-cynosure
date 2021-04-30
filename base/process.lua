@@ -71,8 +71,8 @@ do
   -- default signal handlers
   local defaultHandlers = {
     [0] = function() end,
-    [1] = function(self) self.dead = true end,
-    [2] = function(self) self.dead = true end,
+    [1] = function(self) self.status = "" self.dead = true end,
+    [2] = function(self) self.status = "interrupted" self.dead = true end,
     [9] = function(self) self.dead = true end,
     [18] = function(self) self.stopped = true end,
   }
@@ -108,7 +108,8 @@ do
             return true
           end
           -- and don't block SIGKILL, unless we're init
-          if self.pid ~= 1 and s == 9 then self.dead = true return true end
+          if self.pid ~= 1 and s == 9 then
+            self.status = "killed" self.dead = true return true end
           if self.signal[s] then
             return self.signal[s](self)
           else

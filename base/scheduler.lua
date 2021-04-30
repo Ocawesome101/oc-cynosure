@@ -114,7 +114,44 @@ do
     return processes[pid]
   end
 
+  local function handleDeath(proc, exit, err, ok)
+    local exit = err or 0
+    err = err or ok
 
+    if type(err) == "string" then
+      exit = 127
+    else
+      exit = err or 0
+      err = "exited"
+    end
+
+    err = err or "died"
+    if k.cmdline.log_process_death and
+        k.cmdline.log_process_death ~= 0 then
+      -- if we can, put the process death info on the same stderr stream
+      -- belonging to the process that died
+      if proc.io.stderr and proc.io.stderr.write then
+        local old_logio = k.logio
+        k.logio = proc.io.stderr
+        k.log(k.loglevels.info, "process died:", proc.pid, exit, err)
+        k.logio = old_logio
+      else
+        k.log(k.loglevels.warn, "process died:", proc.pid, exit, err)
+      end
+    end
+
+    computer.pushSignal("process_died", proc.pid, exit, err)
+
+    for k, v in pairs(proc.handles) do
+      pcall(v.close, v)
+    end
+
+    local ppt = "/proc/" .. math.floor(proc.pid)
+    if k.sysfs then
+      k.sysfs.unregister(ppt)
+    end
+    processes[proc.pid] = nil
+  end
 
   local pullSignal = computer.pullSignal
   function api.loop()
@@ -148,6 +185,8 @@ do
             to_run[#to_run + 1] = v.resume_next
             going_to_run[v.resume_next.pid] = true
           end
+        elseif v.dead then
+          handleDeath(v, v.exit_code or 1, v.status or "Killed")
         end
       end
 
@@ -167,42 +206,7 @@ do
         local aok, ok, err = proc:resume(table.unpack(psig))
 
         if proc.dead or ok == "__internal_process_exit" or not aok then
-          local exit = err or 0
-          err = err or ok
-        
-          if type(err) == "string" then
-            exit = 127
-          else
-            exit = err or 0
-            err = "exited"
-          end
-          
-          err = err or "died"
-          if k.cmdline.log_process_death and
-              k.cmdline.log_process_death ~= 0 then
-            -- if we can, put the process death info on the same stderr stream
-            -- belonging to the process that died
-            if proc.io.stderr and proc.io.stderr.write then
-              local old_logio = k.logio
-              k.logio = proc.io.stderr
-              k.log(k.loglevels.info, "process died:", proc.pid, exit, err)
-              k.logio = old_logio
-            else
-              k.log(k.loglevels.warn, "process died:", proc.pid, exit, err)
-            end
-          end
-          
-          computer.pushSignal("process_died", proc.pid, exit, err)
-          
-          for k, v in pairs(proc.handles) do
-            pcall(v.close, v)
-          end
-          
-          local ppt = "/proc/" .. math.floor(proc.pid)
-          if k.sysfs then
-            k.sysfs.unregister(ppt)
-          end
-          processes[proc.pid] = nil
+          handleDeath(proc, exit, err, ok)
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time
           proc.deadline = computer.uptime() + (tonumber(ok) or tonumber(err)

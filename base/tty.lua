@@ -437,9 +437,9 @@ do
           end
         end
 
-        --k.log(k.loglevels.info, "sending", sigacts[tch], "to", mxp)
+        --k.log(k.loglevels.info, "sending", sigacts[tch], "to", k.scheduler.processes[mxp].name)
 
-        k.scheduler.kill(mxp, sigacts[tch])
+        k.scheduler.processes[mxp]:signal(sigacts[tch])
       end
 
       tw = "^" .. tch
