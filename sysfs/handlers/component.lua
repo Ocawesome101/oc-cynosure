@@ -18,9 +18,9 @@ do
     end
 
     for gk, gv in pairs(gpus) do
-      if not gv then
+      if not gpus[gk] then
         for sk, sv in pairs(screens) do
-          if not sv then
+          if not screens[sk] then
             k.log(k.loglevels.info, string.format(
               "Creating TTY on [%s:%s]", gk:sub(1, 8), (sk:sub(1, 8))))
             k.create_tty(gk, sk)

@@ -96,9 +96,14 @@ end
 
 -- register components with the sysfs, if possible
 do
+  for k, v in component.list("carddock") do
+    component.invoke(k, "bindComponent")
+  end
+
   k.log(k.loglevels.info, "Registering components")
   for kk, v in component.list() do
     computer.pushSignal("component_added", kk, v)
+   
     repeat
       local x = table.pack(computer.pullSignal())
       k.event.handle(x)

@@ -440,6 +440,10 @@ do
         --k.log(k.loglevels.info, "sending", sigacts[tch], "to", k.scheduler.processes[mxp].name)
 
         k.scheduler.processes[mxp]:signal(sigacts[tch])
+
+        self.rb = ""
+        if tch == "\4" then self.rb = tch end
+        char = ""
       end
 
       tw = "^" .. tch

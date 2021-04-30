@@ -44,6 +44,8 @@ do
         if s.__read then
           return nil
         end
+
+        s.__read = true
         return r()
       end,
       write = w

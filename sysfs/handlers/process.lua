@@ -14,10 +14,11 @@ do
       cputime = util.fmkfile(proc, "cputime"),
       name = util.mkfile(proc.name),
       threads = util.fmkfile(proc, "threads"),
-      owner = util.mkfile(proc.owner),
+      owner = util.mkfile(tostring(proc.owner)),
       deadline = util.fmkfile(proc, "deadline"),
       stopped = util.fmkfile(proc, "stopped"),
-      waiting = util.fmkfile(proc, "waiting")
+      waiting = util.fmkfile(proc, "waiting"),
+      status = util.fnmkfile(function() return proc.coroutine.status(proc) end)
     }
 
     local mt = {
