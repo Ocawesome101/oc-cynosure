@@ -1,6 +1,6 @@
 -- Cynosure kernel.  Should (TM) be mostly drop-in compatible with Paragon. --
 -- Might even be better.  Famous last words!
--- Copyright (c) 2021 i develop things under the GNU GPLv3.
+-- Copyright (c) 2021 i develop things under the DSLv1.
 
 _G.k = { cmdline = table.pack(...), modules = {} }
 do
