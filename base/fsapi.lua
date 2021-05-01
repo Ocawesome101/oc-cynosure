@@ -319,6 +319,10 @@ do
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
   
+    if not mode:match("r") then
+      file = file:gsub("/(.-)$", "")
+    end
+
     local node, err, path = resolve(file)
     if not node then
       return nil, err
