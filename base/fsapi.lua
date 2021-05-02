@@ -64,14 +64,17 @@ do
     local current, parent = mounts["/"] or faux
 
     if not mounts["/"] then
+      resolving[path] = nil
       return nil, "root filesystem is not mounted!"
     end
 
     if path == "" or path == "/" then
+      resolving[path] = nil
       return mounts["/"], nil, ""
     end
     
     if current.children[path] then
+      resolving[path] = nil
       return current.children[path], nil, ""
     end
     
@@ -319,8 +322,10 @@ do
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
   
-    if not mode:match("r") then
-      file = file:gsub("/(.-)$", "")
+    mode = mode or "r"
+
+    if mode:match("[wa]") then
+      fs.api.touch(file)
     end
 
     local node, err, path = resolve(file)
@@ -328,7 +333,6 @@ do
       return nil, err
     end
     
-    mode = mode or "r"
     local data = node.node:stat(path)
     local user = (k.scheduler.info() or {owner=0}).owner
     -- TODO: groups

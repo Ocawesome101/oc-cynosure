@@ -66,7 +66,7 @@ do
     
       repeat
         local byte = self:read_byte()
-        read = string.format("%s%s", read, byte or "")
+        read = read .. (byte or "")
       until #read >= fmt or not byte
       
       return read
