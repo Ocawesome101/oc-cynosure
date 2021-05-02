@@ -33,8 +33,6 @@ do
   
     mode = mode or "r"
 
-    k.log(k.loglevels.info, "OPEN", file, mode)
-    
     local handle, err = fs.open(file, mode)
     if not handle then
       return nil, err
