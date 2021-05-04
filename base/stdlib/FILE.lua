@@ -45,7 +45,7 @@ do
     
     repeat
       local c = self:read_byte()
-      line = string.format("%s%s", line, c or "")
+      line = line .. (c or "")
     until c == "\n" or not c
     
     return line
@@ -90,7 +90,7 @@ do
         
         repeat
           local byte = self:read_byte()
-          read = string.format("%s%s", read, byte or "")
+          read = read .. (byte or "")
         until not byte
         
         return read
@@ -103,7 +103,7 @@ do
             -- TODO: this breaks with no buffering
             self.read_buffer = byte .. self.read_buffer
           else
-            read = string.format("%s%s", read, byte or "")
+            read = read .. (byte or "")
           end
         until not tonumber(byte)
         
