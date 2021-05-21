@@ -44,7 +44,9 @@ do
     
     n[ctype] = n[ctype] + 1
 
-    k.sysfs.register("directory", true, path_)
+    if not k.sysfs.retrieve(path_) then
+      k.sysfs.register("directory", true, path_)
+    end
 
     local s = k.sysfs.register(ctype, addr, path)
     if not s then

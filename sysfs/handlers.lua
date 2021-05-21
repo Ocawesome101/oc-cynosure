@@ -59,6 +59,7 @@ do
 
 -- component-specific handlers
 --#include "sysfs/handlers/gpu.lua"
+--#include "sysfs/handlers/filesystem.lua"
 
 -- component event handler
 --#include "sysfs/handlers/component.lua"
