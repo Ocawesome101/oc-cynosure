@@ -89,7 +89,9 @@ do
         end
       )
     }
+
+    return new
   end
 
-  k.sysfs.register("gpu", mknew)
+  k.sysfs.handle("gpu", mknew)
 end

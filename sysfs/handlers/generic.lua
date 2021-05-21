@@ -6,7 +6,7 @@ do
   local function mknew(addr)
     return {
       dir = true,
-      addr = util.mkfile(addr),
+      address = util.mkfile(addr),
       type = util.mkfile(component.type(addr)),
       slot = util.mkfile(tostring(component.slot(addr)))
     }

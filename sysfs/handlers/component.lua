@@ -38,11 +38,14 @@ do
 
     k.log(k.loglevels.info, "Detected component:", addr .. ", type", ctype)
     
-    local path = "/sys/components/by-address/" .. addr
-    local path2 = "/sys/components/by-type/" .. ctype .. "/" .. n[ctype]
+    local path = "/components/by-address/" .. addr:sub(1, 6)
+    local path_ = "/components/by-type/" .. ctype
+    local path2 = "/components/by-type/" .. ctype .. "/" .. n[ctype]
     
     n[ctype] = n[ctype] + 1
-    
+
+    k.sysfs.register("directory", true, path_)
+
     local s = k.sysfs.register(ctype, addr, path)
     if not s then
       s = k.sysfs.register("generic", addr, path)
