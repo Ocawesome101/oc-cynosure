@@ -34,6 +34,18 @@ do
           return tostring(proxy.isReadOnly())
         end
       ),
+      mounts = util.fnmkfile(
+        function()
+          local mounts = k.fs.api.mounts()
+          local ret = ""
+          for k,v in pairs(mounts) do
+            if v == addr then
+              ret = ret .. k .. "\n"
+            end
+          end
+          return ret
+        end
+      )
     }
 
     return new

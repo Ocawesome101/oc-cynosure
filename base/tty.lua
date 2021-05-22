@@ -470,6 +470,14 @@ do
     
     self.rb = string.format("%s%s", self.rb, char)
   end
+
+  function _stream:clipboard(...)
+    local signal = table.pack(...)
+
+    for c in signal[3]:gmatch(".") do
+      self:key_down(signal[1], signal[2], c, 0)
+    end
+  end
   
   function _stream:read(n)
     checkArg(1, n, "number")
@@ -507,6 +515,7 @@ do
     self.flush = closed
     self.close = closed
     k.event.unregister(self.key_handler_id)
+    k.event.unregister(self.clip_handler_id)
     if self.ttyn then k.sysfs.unregister("/dev/tty"..self.ttyn) end
     return true
   end
@@ -555,6 +564,10 @@ do
     -- register a keypress handler
     new.key_handler_id = k.event.register("key_down", function(...)
       return new:key_down(...)
+    end)
+
+    new.clip_handler_id = k.event.register("clipboard", function(...)
+      return new:clipboard(...)
     end)
     
     -- register the TTY with the sysfs

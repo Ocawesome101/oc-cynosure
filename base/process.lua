@@ -99,7 +99,7 @@ do
       coroutine = {},
       cputime = 0,
       deadline = 0,
-      env = setmetatable({}, {__index = args.env}),
+      env = args.env and k.util.copy_table(args.env) or {},
       signal = setmetatable({}, {
         __call = function(_, self, s)
           -- don't block SIGSTOP or SIGCONT

@@ -21,7 +21,7 @@ do
       local info = k.scheduler.info()
       if not info then return nil end
       info.data.io[f] = v
-      info.handles[im[f]] = v
+      info.data.handles[im[f]] = v
     end
   }
 

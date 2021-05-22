@@ -53,6 +53,11 @@ do
   
     computer.beep(440, 0.25)
     computer.beep(380, 0.25)
+
+    -- if there's no log I/O, just die
+    if not k.logio then
+      error(msg)
+    end
     
     k.log(k.loglevels.panic, "-- \27[91mbegin stacktrace\27[37m --")
     

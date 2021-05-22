@@ -11,12 +11,6 @@ do
     reftype = rtype:upper() or "UUID"
     root = ref or k.cmdline.root
   elseif not computer.getBootAddress then
-    if not k.logio then
-      -- we have no logger output, resort to desparate measures
-      -- GOODBYE CRUEL WORLD
-      error("cannot determine root filesystem")
-    end
-  
     -- still error, but slightly less hard
     k.panic("Cannot determine root filesystem!")
   else
