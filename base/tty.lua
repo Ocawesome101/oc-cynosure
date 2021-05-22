@@ -475,7 +475,7 @@ do
     local signal = table.pack(...)
 
     for c in signal[3]:gmatch(".") do
-      self:key_down(signal[1], signal[2], c, 0)
+      self:key_down(signal[1], signal[2], c:byte(), 0)
     end
   end
   
