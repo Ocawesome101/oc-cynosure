@@ -429,7 +429,7 @@ do
   function fs.api.remove(file)
     checkArg(1, file, "string")
     
-    local node, err, path = resolve(root)
+    local node, err, path = resolve(file)
     
     if not node then
       return nil, err
@@ -440,7 +440,7 @@ do
 
   local mounted = {}
 
-  fs.api.types = {
+  fs.api.fstypes = {
     RAW = 0,
     NODE = 1,
     OVERLAY = 2,
@@ -453,7 +453,7 @@ do
     
     local device, err = node
     
-    if fstype ~= fs.api.types.RAW then
+    if fstype ~= fs.api.fstypes.RAW then
       -- TODO: properly check object methods first
       goto skip
     end
@@ -536,6 +536,8 @@ do
     for k,v in pairs(mounted) do new[("/"..k):gsub("[\\/]+", "/")] = v end
     return new
   end
+
+  fs.api.types = fs.types
 
   k.fs = fs
 end
