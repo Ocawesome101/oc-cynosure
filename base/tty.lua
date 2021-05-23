@@ -8,7 +8,7 @@ do
     0xaa5500,
     0x0000aa,
     0xaa00aa,
-    0x0055aa,
+    0x00aaaa,
     0xaaaaaa,
     0x555555,
     0xff5555,
@@ -197,6 +197,18 @@ do
     if n == 6 then
       self.rb = string.format("%s\27[%d;%dR", self.rb, self.cy, self.cx)
     end
+  end
+
+  function commands:S(args)
+    local n = args[1] or 1
+    self.gpu.copy(1, 1, self.w, self.h, 0, -n)
+    self.gpu.fill(1, self.h, self.w, n, " ")
+  end
+
+  function commands:T(args)
+    local n = args[1] or 1
+    self.gpu.copy(1, 1, self.w, self.h, 0, n)
+    self.gpu.fill(1, 1, self.w, n, " ")
   end
 
   -- adjust more terminal attributes
