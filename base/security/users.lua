@@ -8,7 +8,8 @@ do
   local api = {}
 
   -- default root data so we can at least run init as root
-  -- init should overwrite this with `users.prime()` later on
+  -- the kernel should overwrite this with `users.prime()`
+  -- and data from /etc/passwd later on
   -- but for now this will suffice
   local passwd = {
     [0] = {
@@ -20,11 +21,17 @@ do
     }
   }
 
+  k.hooks.add("shutdown", function()
+    -- put this here so base/passwd_init can have it
+    k.passwd = passwd
+  end)
+
   function api.prime(data)
     checkArg(1, data, "table")
  
     api.prime = nil
     passwd = data
+    k.passwd = data
     
     return true
   end
@@ -38,6 +45,7 @@ do
     local udata = passwd[uid]
     
     if not udata then
+      os.sleep(1)
       return nil, "no such user"
     end
     
@@ -45,6 +53,7 @@ do
       return true
     end
     
+    os.sleep(1)
     return nil, "invalid password"
   end
 
@@ -113,5 +122,50 @@ do
     }
   end
 
+  function api.usermod(attributes)
+    checkArg(1, attributes, "table")
+    attributes.uid = tonumber(attributes.uid) or (#passwd + 1)
+    
+    local current = k.scheduler.info().owner or 0
+    
+    if not passwd[attributes.uid] then
+      assert(attributes.name, "usermod: a username is required")
+      assert(attributes.pass, "usermod: a password is required")
+      assert(attributes.acls, "usermod: ACL data is required")
+      assert(type(attributes.acls) == "table","usermod: ACL data must be a table")
+    else
+      if attributes.pass and current ~= 0 and current ~= attributes.uid then
+        -- only root can change someone else's password
+        return nil, "cannot change password: permission denied"
+      end
+      for k, v in pairs(passwd[attributes.uid]) do
+        attributes[k] = v
+      end
+    end
+
+    attributes.home = attributes.home or "/home/" .. attributes.name
+    attributes.shell = (attributes.shell or "/bin/lsh"):gsub("%.lua$", "")
+
+    local acl = k.security.acl
+    local acls = 0
+    for k, v in pairs(attributes.acls) do
+      if acl.permissions.user[k] and v then
+        acls = acls & acl.permissions.user[k]
+        if not acl.user_has_permission(current, acl.permissions.user[k])
+            and current ~= 0 then
+          return nil, k .. ": ACL permission denied"
+        end
+      else
+        return nil, k .. ": no such ACL"
+      end
+    end
+
+    attributes.acls = acls
+
+    passwd[attributes.uid] = attributes
+
+    return true
+  end
+  
   k.security.users = api
 end

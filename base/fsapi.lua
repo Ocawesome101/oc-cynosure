@@ -337,10 +337,7 @@ do
     local user = (k.scheduler.info() or {owner=0}).owner
     -- TODO: groups
     
-    if data.owner ~= user and not k.security.acl.user_has_permission(user,
-                            k.security.acl.permissions.user.OPEN_UNOWNED) then
-      return nil, "permission denied"
-    else
+    do
       local perms = k.security.acl.permissions.file
       local rperm, wperm
     
@@ -352,10 +349,12 @@ do
         wperm = perms.OWNER_WRITE
       end
       
-      if (mode == "r" and not
-        k.security.acl.has_permission(data.permissions, rperm)) or
-        ((mode == "w" or mode == "a") and not
-        k.security.acl.has_permission(data.permissions, wperm)) then
+      if ((mode == "r" and not
+          k.security.acl.has_permission(data.permissions, rperm)) or
+          ((mode == "w" or mode == "a") and not
+          k.security.acl.has_permission(data.permissions, wperm))) and not
+          k.security.acl.user_has_permission(user,
+          k.security.acl.permissions.OPEN_UNOWNED) then
         return nil, "permission denied"
       end
     end
@@ -440,7 +439,7 @@ do
 
   local mounted = {}
 
-  fs.api.fstypes = {
+  fs.api.types = {
     RAW = 0,
     NODE = 1,
     OVERLAY = 2,
@@ -453,7 +452,7 @@ do
     
     local device, err = node
     
-    if fstype ~= fs.api.fstypes.RAW then
+    if fstype ~= fs.api.types.RAW then
       -- TODO: properly check object methods first
       goto skip
     end
@@ -536,8 +535,6 @@ do
     for k,v in pairs(mounted) do new[("/"..k):gsub("[\\/]+", "/")] = v end
     return new
   end
-
-  fs.api.types = fs.types
 
   k.fs = fs
 end

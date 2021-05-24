@@ -46,7 +46,7 @@ do
       end
     end
 
-    ok, err = k.fs.api.mount(root, k.fs.api.fstypes.RAW, "/")
+    ok, err = k.fs.api.mount(root, k.fs.api.types.RAW, "/")
   elseif reftype == "LABEL" then
     local comp
     
@@ -78,7 +78,7 @@ do
       k.panic("Could not determine root filesystem from root=", k.cmdline.root)
     end
     
-    ok, err = k.fs.api.mount(comp, k.fs.api.fstypes.RAW, "/")
+    ok, err = k.fs.api.mount(comp, k.fs.api.types.RAW, "/")
   end
 
   if not ok then
@@ -86,6 +86,8 @@ do
   end
   
   k.log(k.loglevels.info, "Mounted root filesystem")
+
+  k.hooks.call("rootfs_mounted")
 end
 
 -- register components with the sysfs, if possible

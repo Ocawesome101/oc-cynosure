@@ -242,7 +242,7 @@ do
   -- we have to hook this here since the root filesystem isn't mounted yet
   -- when the kernel reaches this point.
   k.hooks.add("sandbox", function()
-    assert(k.fs.api.mount(obj, k.fs.api.fstypes.NODE, "sys"))
+    assert(k.fs.api.mount(obj, k.fs.api.types.NODE, "sys"))
     -- Adding the sysfs API to userspace is probably not necessary for most
     -- things.  If it does end up being necessary I'll do it.
     --k.userspace.package.loaded.sysfs = k.util.copy_table(api)

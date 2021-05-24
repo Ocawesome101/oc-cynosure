@@ -294,6 +294,8 @@ do
   function _stream:write(...)
     checkArg(1, ..., "string")
 
+    local time = computer.uptime()
+
     local str = (k.util and k.util.concat or temp)(...)
     local gpu = self.gpu
 
@@ -309,7 +311,16 @@ do
     -- lazily convert tabs
     str = str:gsub("\t", "  ")
     
+    if self ~= k.logio then
+      k.log(k.loglevels.info, time)
+    end
+
     while #str > 0 do
+      if computer.uptime() - time >= 4.8 then -- almost TLWY
+        time = computer.uptime()
+        computer.pullSignal(0) -- yield so we don't die
+      end
+
       if self.in_esc then
         local esc_end = str:find("[a-zA-Z]")
 

@@ -165,6 +165,8 @@ do
 
     k.userspace.package.loaded.users = k.util.copy_table(k.security.users)
 
+    k.userspace.package.loaded.acls = k.util.copy_table(k.security.acl.permissions)
+
     local blacklist = {}
     for k in pairs(k.userspace.package.loaded) do blacklist[k] = true end
 

@@ -2,7 +2,7 @@
 
 k.log(k.loglevels.info, "base/passwd_init")
 
-do
+k.hooks.add("rootfs_mounted", function()
   local p1 = "(%d+):([^:]+):([0-9a-fA-F]+):(%d+):([^:]+):([^:]+)"
   local p2 = "(%d+):([^:]+):([0-9a-fA-F]+):(%d+):([^:]+)"
   local p3 = "(%d+):([^:]+):([0-9a-fA-F]+):(%d+)"
@@ -33,7 +33,7 @@ do
         data[uid] = {
           name = uname,
           pass = pass,
-          acls = acls,
+          acls = tonumber(acls),
           home = home,
           shell = shell
         }
@@ -49,4 +49,20 @@ do
     k.log(k.loglevels.info,
       "Successfully registered user data from /etc/passwd")
   end
-end
+
+  k.hooks.add("shutdown", function()
+    k.log(k.loglevels.info, "Saving user data to /etc/passwd")
+    local handle, err = io.open("/etc/passwd", "w")
+    if not handle then
+      k.log(k.loglevels.warn, "failed saving /etc/passwd:", err)
+      return
+    end
+    for k, v in pairs(k.passwd) do
+      local data = string.format("%d:%s:%s:%d:%s:%s\n",
+        k, v.name, v.pass, v.acls, v.home or ("/home/"..v.name),
+        v.shell or "/bin/lsh")
+      handle:write(data)
+    end
+    handle:close()
+  end)
+end)
