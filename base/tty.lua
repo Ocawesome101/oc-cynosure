@@ -293,7 +293,7 @@ do
 
     local str = (k.util and k.util.concat or temp)(...)
 
-    if self.attributes.line then
+    if self.attributes.line and not k.cmdline.nottylinebuffer then
       self.wb = self.wb .. str
       if self.wb:find("\n") then
         local ln = self.wb:match("(.-\n)")
@@ -304,7 +304,7 @@ do
       return self:write_str(str)
     end
   end
-  
+
   -- This is where most of the heavy lifting happens.  I've attempted to make
   -- this function fairly optimized, but there's only so much one can do given
   -- OpenComputers's call budget limits and wrapped string library.
