@@ -287,18 +287,31 @@ do
   local function temp(...)
     return ...
   end
+
+  function _stream:write(...)
+    checkArg(1, ..., "string")
+
+    local str = (k.util and k.util.concat or temp)(...)
+
+    if self.attributes.line then
+      self.wb = self.wb .. str
+      if self.wb:find("\n") then
+        local ln = self.wb:match("(.-\n)")
+        self.wb = self.wb:sub(#ln + 1)
+        return self:write_str(ln)
+      end
+    else
+      return self:write_str(str)
+    end
+  end
   
   -- This is where most of the heavy lifting happens.  I've attempted to make
   -- this function fairly optimized, but there's only so much one can do given
   -- OpenComputers's call budget limits and wrapped string library.
-  function _stream:write(...)
-    checkArg(1, ..., "string")
-
-    local time = computer.uptime()
-
-    local str = (k.util and k.util.concat or temp)(...)
+  function _stream:write_str(str)
     local gpu = self.gpu
-
+    local time = computer.uptime()
+    
     -- TODO: cursor logic is a bit brute-force currently, there are certain
     -- TODO: scenarios where cursor manipulation is unnecessary
     local c, f, b = gpu.get(self.cx, self.cy)
@@ -388,8 +401,11 @@ do
     return true
   end
 
-  -- TODO: proper line buffering for output
   function _stream:flush()
+    if #self.wb > 0 then
+      self:write_str(self.wb)
+      self.wb = ""
+    end
     return true
   end
 
@@ -488,7 +504,7 @@ do
     end
     
     if self.attributes.echo then
-      self:write(tw or "")
+      self:write_str(tw or "")
     end
     
     self.rb = string.format("%s%s", self.rb, char)
@@ -504,6 +520,8 @@ do
   
   function _stream:read(n)
     checkArg(1, n, "number")
+
+    self:flush()
 
     if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n)
@@ -591,7 +609,8 @@ do
       cy = 1, -- the cursor's Y position
       fg = colors[8], -- the current foreground color
       bg = colors[1], -- the current background color
-      rb = "" -- a buffer of characters read from the input
+      rb = "", -- a buffer of characters read from the input
+      wb = ""  -- line buffering at its finest
     }, {__index = _stream})
 
     -- avoid gpu.getResolution calls

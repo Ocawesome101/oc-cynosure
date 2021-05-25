@@ -188,6 +188,10 @@ do
       self.base:write(self.write_buffer)
       self.write_buffer = ""
     end
+
+    if self.base.flush then
+      self.base:flush()
+    end
     
     return true
   end
