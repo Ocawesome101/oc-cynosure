@@ -370,7 +370,7 @@ do
     if not node then
       return nil, err
     end
-    
+
     return node.node:stat(path)
   end
 
@@ -465,8 +465,27 @@ do
     end
     
     ::skip::
+
+    if type(device) == "string" and fstype ~= fs.types.OVERLAY then
+      device = component.proxy(device)
+      if (not device) then
+        return nil, "no such component"
+      elseif device.type ~= "filesystem" and device.type ~= "drive" then
+        return nil, "component is not a drive or filesystem"
+      end
+
+      if device.type == "filesystem" then
+        device = create_node_from_managed(device)
+      else
+        device = create_node_from_unmanaged(device)
+      end
+    end
+
     if not device then
       return nil, err
+    end
+
+    if device.type == "filesystem" then
     end
     
     path = clean(path)
@@ -495,8 +514,8 @@ do
     local full = clean(string.format("%s/%s", rpath, fname))
     if full == "" then full = "/" end
 
-    if type(node) == "string" then
-      pnode.children[full] = node
+    if type(device) == "string" then
+      pnode.children[full] = device
     else
       pnode.children[full] = {node=device, children={}}
       mounted[path]=(device.node and device.node.getLabel
