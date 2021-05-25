@@ -552,10 +552,31 @@ do
     checkArg(2, screen, "string")
 
     local proxy = component.proxy(gpu)
-    
+
     proxy.bind(screen)
     proxy.setForeground(colors[8])
     proxy.setBackground(colors[1])
+
+    proxy.setDepth(proxy.maxDepth())
+    -- optimizations for no color on T1
+    if proxy.getDepth() == 1 then
+      local fg, bg = proxy.setForeground, proxy.setBackground
+      local f, b = colors[1], colors[8]
+      function proxy.setForeground(c)
+        if c >= 0xAAAAAA or c <= 0x111111 and f ~= c then
+          fg(c)
+        end
+        f = c
+      end
+      function proxy.setBackground(c)
+        if c >= 0xAAAAAA or c <= 0x111111 and b ~= c then
+          bg(c)
+        end
+        b = c
+      end
+      proxy.getBackground = function()return f end
+      proxy.getForeground = function()return b end
+    end
     
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table

@@ -7,9 +7,8 @@ do
     checkArg(1, addr, "string")
     checkArg(2, mkpx, "boolean", "nil")
     
-    local pat = string.format("^%s", addr:gsub("%-", "%%-"))
     for k, v in component.list() do
-      if k:match(pat) then
+      if k:sub(1, #addr) == addr then
         return mkpx and component.proxy(k) or k
       end
     end
