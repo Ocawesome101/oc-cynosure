@@ -1,0 +1,48 @@
+/// cfs: the Cynosure File System ///
+
+Revision 0.
+
+CFS is effectively a simplified version of Linux's
+Second Extended Filesystem.
+
+This document assumes that one sector is 512
+bytes.
+
+// sector 1: master boot record, fs-independent
+
+// sector 2: superblock
+
+--------------------------------------------------
+OFFSET | LENGTH | DESCRIPTION
+--------------------------------------------------
+0      | 8      | FS signature - ASCII "cfsdrive"
+--------------------------------------------------
+8      | 2      | Block size, in bytes, min 512
+--------------------------------------------------
+10     | 8      | Block count
+--------------------------------------------------
+18     | 8      | Inode count
+--------------------------------------------------
+26     | 8      | Total filesystem size, in KB
+
+// next ceil(inodecount / 16384) sectors: Inode
+   bitmap
+
+One bit represents one used inode.  Simple.
+
+// next ceil(blockcount / 4096) sectors: Block
+   bitmap
+
+One bit represents one block.  Equally simple.
+
+// next (inodecount / 4) sectors: Inodes!
+
+--------------------------------------------------
+OFFSET | LENGTH | DESCRIPTION
+--------------------------------------------------
+0      | 
+--------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------

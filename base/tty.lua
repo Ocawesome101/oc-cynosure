@@ -452,11 +452,11 @@ do
       local tch = string.char(
           (ch == 0 and 32) or
           (ch < 27 and ch + 96) or
-          (ch == 27 and "[") or
-          (ch == 28 and "\\") or
-          (ch == 29 and "]") or
-          (ch == 30 and "~") or
-          (ch == 31 and "?") or ch
+          (ch == 27 and 91) or -- [
+          (ch == 28 and 92) or -- \
+          (ch == 29 and 93) or -- ]
+          (ch == 30 and 126) or
+          (ch == 31 and 63) or ch
         ):upper()
     
       if sigacts[tch] and not self.disabled[tch] and k.scheduler.processes then
