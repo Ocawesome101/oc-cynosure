@@ -412,12 +412,14 @@ do
 
     if node.children then
       for k in pairs(node.children) do
-        local info = fs.api.stat(path.."/"..k)
-        if (info or n).isDirectory then
-          k = k .. "/"
-        end
-        if info then
-          ok[#ok + 1] = k
+        if not k:match(".+/.+") then
+          local info = fs.api.stat(path.."/"..k)
+          if (info or n).isDirectory then
+            k = k .. "/"
+          end
+          if info then
+            ok[#ok + 1] = k
+          end
         end
       end
     end
