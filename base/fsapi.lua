@@ -409,6 +409,8 @@ do
     end
 
     ok = ok or {}
+    local used = {}
+    for _, v in pairs(ok) do used[v] = true end
 
     if node.children then
       for k in pairs(node.children) do
@@ -417,7 +419,7 @@ do
           if (info or n).isDirectory then
             k = k .. "/"
           end
-          if info then
+          if info and not used[k] then
             ok[#ok + 1] = k
           end
         end
