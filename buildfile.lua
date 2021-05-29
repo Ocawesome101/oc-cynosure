@@ -15,5 +15,5 @@ _G.main = function()
   handle:close()
   io.write(ex("./luacomp init.lua -Okernel.lua"))
   log("warn", "cleaning up")
-  os.remove("includes.lua")
+  --os.remove("includes.lua")
 end
