@@ -3,7 +3,7 @@
 k.log(k.loglevels.info, "base/load_init")
 
 -- we need to mount the root filesystem first
-do
+if not k.fs.mounts["/"] then
   local root, reftype = nil, "UUID"
   
   if k.cmdline.root then

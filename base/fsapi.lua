@@ -28,6 +28,7 @@ do
   --    mounting, hopefully all seamlessly.
   -- mounts["/"] = { node = ..., children = {["bin"] = "usr/bin", ...}}
   local mounts = {}
+  fs.mounts = mounts
 
   local function split(path)
     local segments = {}
