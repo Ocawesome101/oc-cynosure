@@ -179,10 +179,10 @@ local _handle = {}
 
 function _handle:read(n)
   checkArg(1, n, "number")
-  if self.fptr >= #self.data then return nil end
-  n = math.min(self.fptr + n, #self.data)
-  local data = self.data:sub(self.fptr, n)
-  self.fptr = n + 1
+  if self.fptr >= self.node.length then return nil end
+  n = math.min(self.fptr + n, self.node.length)
+  local data = read(n - self.fptr, self.fptr + self.node.offset, true)
+  self.fptr = n-- + 1
   return data
 end
 
@@ -192,11 +192,11 @@ function _handle:seek(origin, offset)
   checkArg(1, origin, "string")
   checkArg(2, offset, "number", "nil")
   local n = (origin == "cur" and self.fptr) or (origin == "set" and 0) or
-    (origin == "end" and #self.data) or
+    (origin == "end" and self.node.length) or
     (error("bad offset to 'seek' (expected one of: cur, set, end, got "
       .. origin .. ")"))
   n = n + (offset or 0)
-  if n < 0 or n > #self.data then
+  if n < 0 or n > self.node.length then
     return nil, "cannot seek there"
   end
   self.fptr = n
@@ -225,7 +225,7 @@ function obj:open(f, m)
   if n.__is_a_directory then return nil, "is a directory" end
 
   local new = setmetatable({
-    data = read(n.length, n.offset, true),
+    node = n, --data = read(n.length, n.offset, true),
     mode = m,
     fptr = 0
   }, {__index = _handle})
@@ -238,7 +238,7 @@ obj.node = {getLabel = function() return "mtarfs" end}
 _G.__mtar_fs_tree = obj
 
 local hdl = assert(obj:open("/init.lua", "r"))
-local ldme = hdl.data
+local ldme = hdl:read(hdl.node.length)
 hdl:close()
 
 assert(load(ldme, "=mtarfs:/init.lua", "t", _G))()

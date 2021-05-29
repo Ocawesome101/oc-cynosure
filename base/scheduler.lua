@@ -126,8 +126,8 @@ do
     end
 
     err = err or "died"
-    if k.cmdline.log_process_death and
-        k.cmdline.log_process_death ~= 0 then
+    if (k.cmdline.log_process_death and
+        k.cmdline.log_process_death ~= 0) then
       -- if we can, put the process death info on the same stderr stream
       -- belonging to the process that died
       if proc.io.stderr and proc.io.stderr.write then
