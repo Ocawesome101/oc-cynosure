@@ -24,6 +24,9 @@ OFFSET | LENGTH | DESCRIPTION
 18     | 8      | Inode count
 --------------------------------------------------
 26     | 8      | Total filesystem size, in KB
+--------------------------------------------------
+34     | 2      | Filesystem revision.
+--------------------------------------------------
 
 // next ceil(inodecount / 16384) sectors: Inode
    bitmap
@@ -35,14 +38,44 @@ One bit represents one used inode.  Simple.
 
 One bit represents one block.  Equally simple.
 
-// next (inodecount / 4) sectors: Inodes!
+// next (inodecount / 4) blocks: Inodes!
 
 --------------------------------------------------
 OFFSET | LENGTH | DESCRIPTION
 --------------------------------------------------
-0      | 
+0      | 2      | File type and permissions data.
+2      | 2      | User ID of the file's owner.
+4      | 2      | Group ID.
+6      | 2      | Inode reference count.
+8      | 8      | File size.
+16     | 8      | File creation time.
+24     | 8      | Time of last file access.
+32     | 8      | Time of last file modification.
+40     | 64     | Reserved for future use.
+40     | 40*8   | Data block IDs.
+424    | 8*8    | Indirect data block IDs.
+456    | 3*8    | Doubly indirect data block IDs.
 --------------------------------------------------
+
+File permission data map.  If no bits are set, the
+file is invalid.
 --------------------------------------------------
+  BIT  | MEANING
 --------------------------------------------------
---------------------------------------------------
+0x1    | regular file
+0x2    | directory
+0x4    | character device
+0x8    | fifo
+0x10   | unused
+0x20   | unused
+0x40   | unused
+0x80   | owner read
+0x100  | owner write
+0x200  | owner execute
+0x400  | group read
+0x800  | group write
+0x1000 | group execute
+0x2000 | other read
+0x4000 | other write
+0x8000 | other execute
 --------------------------------------------------
