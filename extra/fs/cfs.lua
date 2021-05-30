@@ -26,4 +26,7 @@ do
     char[8*8] "indirect",
     char[3*8] "double_indirect"
   }
+  local datablock = struct {
+    uint64 "blockid"
+  }
 end
