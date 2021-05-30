@@ -98,7 +98,7 @@ local function read_header()
   local flen = string.unpack(">I8", flendat)
   local offset = fs.seek(handle, "cur", 0)
   status(24, 2, name .. (" "):rep(50 - (24 + #name)))
-  read(flen)
+  fs.seek(handle, "cur", flen)
   add_to_tree(name, offset, flen)
   return true
 end

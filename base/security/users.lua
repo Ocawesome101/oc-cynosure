@@ -166,6 +166,22 @@ do
 
     return true
   end
+
+  function api.remove(uid)
+    checkArg(1, uid, "number")
+    if not passwd[uid] then
+      return nil, "no such user"
+    end
+
+    if not k.security.acl.user_has_permission(k.scheduler.info().owner,
+        k.security.acl.permissions.user.MANAGE_USERS) then
+      return nil, "permission denied"
+    end
+
+    passwd[uid] = nil
+    
+    return true
+  end
   
   k.security.users = api
 end
