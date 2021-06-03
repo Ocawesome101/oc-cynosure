@@ -30,7 +30,8 @@ do
 
   local function wrap_cursor(self)
     while self.cx > self.w do
-      self.cx, self.cy = self.cx - self.w, self.cy + 1
+    --if self.cx > self.w then
+      self.cx, self.cy = 1, self.cy + 1
     end
     
     while self.cx < 1 do
@@ -51,6 +52,7 @@ do
   end
 
   local function writeline(self, rline)
+    local wrapped = false
     while #rline > 0 do
       local to_write
       rline, to_write = pop(rline, self.w - self.cx + 1)
@@ -58,9 +60,11 @@ do
       self.gpu.set(self.cx, self.cy, to_write)
       
       self.cx = self.cx + #to_write
+      wrapped = self.cx > self.w
       
       wrap_cursor(self)
     end
+    return wrapped
   end
 
   local function write(self, lines)
@@ -72,10 +76,12 @@ do
         lines, ln = pop(lines, next_nl - 1)
         lines = lines:sub(2) -- take off the newline
         
-        writeline(self, ln)
-        
-        self.cx, self.cy = 1, self.cy + 1
-        
+        local w = writeline(self, ln)
+
+        if not w then
+          self.cx, self.cy = 1, self.cy + 1
+        end
+
         wrap_cursor(self)
       else
         writeline(self, lines)
