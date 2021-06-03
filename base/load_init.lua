@@ -93,6 +93,9 @@ do
   k.log(k.loglevels.info, "Mounted root filesystem")
   
   k.hooks.call("rootfs_mounted")
+
+  -- mount the tmpfs
+  k.fs.api.mount(component.proxy(computer.tmpAddress()), k.fs.api.types.RAW, "/tmp")
 end
 
 -- register components with the sysfs, if possible
