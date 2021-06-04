@@ -13,7 +13,7 @@ _G.main = function()
     handle:write("--#include \"", inc, ".lua\"\n")
   end
   handle:close()
-  io.write(ex("./luacomp init.lua -Okernel.lua"))
+  io.write(ex("../utils/proc.lua init.lua kernel.lua"))
   log("warn", "cleaning up")
   --os.remove("includes.lua")
 end

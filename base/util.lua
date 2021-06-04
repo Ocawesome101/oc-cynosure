@@ -162,11 +162,11 @@ do
     end
 
     function util.make_pipe()
-      return setmetatable({
+      return k.create_fstream(setmetatable({
         from = 0, -- the process providing output
         to = 0, -- the process reading input
         rb = "",
-      }, {__index = _pipe})
+      }, {__index = _pipe}), "rw")
     end
 
     k.hooks.add("sandbox", function()
