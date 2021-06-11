@@ -5,6 +5,8 @@ k.log(k.loglevels.info, "base/load")
 if (not k.cmdline.no_force_yields) then
   local patterns = {
     { "if([ %(])(.-)([ %)])then([ \n])", "if%1%2%3then%4__internal_yield() " },
+    { "elseif([ %(])(.-)([ %)])then([ \n])", "elseif%1%2%3then%4__internal_yield() " },
+    { "([ \n])else([ \n])", "%1else%2__internal_yield() " },
     { "while([ %(])(.-)([ %)])do([ \n])", "while%1%2%3do%4__internal_yield() " },
     { "for([ %(])(.-)([ %)])do([ \n])", "for%1%2%3do%4__internal_yield() " },
     { "repeat([ \n])", "repeat%1__internal_yield() " },
@@ -13,6 +15,54 @@ if (not k.cmdline.no_force_yields) then
   local old_load = load
 
   local max_time = tonumber(k.cmdline.max_process_time) or 0.5
+
+  local function process_section(s)
+    for i=1, #patterns, 1 do
+      s = s:gsub(patterns[i][1], patterns[i][2])
+    end
+    return s
+  end
+
+  local function process(chunk)
+    local i = 1
+    local ret = ""
+    local nq = 0
+    local in_blocks = {}
+    while true do
+      local nextquote = chunk:find("[^\\][\"']", i)
+      if nextquote then
+        local ch = chunk:sub(i, nextquote)
+        i = nextquote + 1
+        nq = nq + 1
+        if nq % 2 == 0 then
+          ch = process_section(ch)
+        end
+        ret = ret .. ch
+      else
+        local nbs, nbe = chunk:find("%[=+%[", i)
+        if nbs and nbe then
+          ret = ret .. process_section(chunk:sub(i, nbs - 1))
+          local match = chunk:find("%]" .. ("="):rep((nbe - nbs) - 2) .. "%]")
+          if not match then
+            -- the Lua parser will error here, no point in processing further
+            ret = ret .. chunk:sub(nbs)
+            break
+          end
+          local ch = chunk:sub(nbs, match)
+          ret = ret .. ch
+          i = match
+        else
+          ret = ret .. process_section(chunk:sub(i))
+          i = #chunk
+          break
+        end
+      end
+    end
+
+    if i < #chunk then ret = ret .. process_section(chunk:sub(i)) end
+
+    return ret
+  end
 
   function _G.load(chunk, name, mode, env)
     checkArg(1, chunk, "function", "string")
@@ -30,8 +80,12 @@ if (not k.cmdline.no_force_yields) then
       until not ch
     end
 
-    for i=1, #patterns, 1 do
-      chunk = chunk:gsub(patterns[i][1], patterns[i][2])
+    chunk = process(chunk)
+
+    if k.cmdline.debug_load then
+      local handle = io.open("/load.txt", "a")
+      handle:write(" -- load: ", name or "(no name)", " --\n", chunk)
+      handle:close()
     end
 
     local last_yield = computer.uptime()
