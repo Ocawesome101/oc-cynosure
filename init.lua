@@ -24,6 +24,7 @@ end
 --#include "base/types.lua"
 --#include "base/struct.lua"
 --#include "base/syslog.lua"
+--#include "base/load.lua"
 --#include "base/thread.lua"
 --#include "base/process.lua"
 --#include "base/scheduler.lua"
