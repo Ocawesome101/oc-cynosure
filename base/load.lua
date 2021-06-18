@@ -39,18 +39,18 @@ if (not k.cmdline.no_force_yields) then
         end
         ret = ret .. ch
       else
-        local nbs, nbe = chunk:find("%[=+%[", i)
+        local nbs, nbe = chunk:find("%[=*%[", i)
         if nbs and nbe then
           ret = ret .. process_section(chunk:sub(i, nbs - 1))
-          local match = chunk:find("%]" .. ("="):rep((nbe - nbs) - 2) .. "%]")
+          local match = chunk:find("%]" .. ("="):rep((nbe - nbs) - 1) .. "%]")
           if not match then
             -- the Lua parser will error here, no point in processing further
             ret = ret .. chunk:sub(nbs)
             break
           end
           local ch = chunk:sub(nbs, match)
-          ret = ret .. ch
-          i = match
+          ret = ret .. ch --:sub(1,-2)
+          i = match + 1
         else
           ret = ret .. process_section(chunk:sub(i))
           i = #chunk
