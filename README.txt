@@ -16,6 +16,7 @@ Main goals:
   - Better dynamic module loading
   - Better unmanaged filesystem interface
   - Lighter on memory, i.e. works on 192KB of RAM
+    o  The kernel boots on 192KB of RAM, and ULOS loads on 256KB.
   - Relatively small footprint, both memory and storage, of minimal kernel
 
 Core Features
@@ -32,7 +33,7 @@ Some of these may be unrealistic.  These are subject to change.
           it's lighter on memory to create one RAM-based filesystem rather than
           2 of them;
       > Process information may be read from "/sys/proc/{pid}"
-      > Devices are accessible through "/sys/dev/{device_id}{number}"
+      > Devices are accessible through "/sys/dev/{device_id}{number}" (TODO)
         - Device names:
           o `hdN`: refers to internal filesystem nodes
           o `fdN`: refers to external filesystem nodes, i.e. floppy disks
@@ -51,3 +52,6 @@ Some of these may be unrealistic.  These are subject to change.
       > Achieved through wrapping computer.{push,pull}Signal
   - Advanced piping support
     - Hopefully thread-safe
+  - Crude pre-emptive multitasking support by wrapping load() to forcibly insert yields
+    o This can be disabled on the kernel command line with the 'no_force_yields' option
+    o The timeout may be adjusted from its default of 0.5s with the 'max_process_time=NUMBER' option
