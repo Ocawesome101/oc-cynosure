@@ -34,7 +34,7 @@ if (not k.cmdline.no_force_yields) then
         local ch = chunk:sub(i, nextquote)
         i = nextquote + 1
         nq = nq + 1
-        if nq % 2 == 0 then
+        if nq % 2 == 1 then
           ch = process_section(ch)
         end
         ret = ret .. ch
@@ -82,7 +82,7 @@ if (not k.cmdline.no_force_yields) then
 
     chunk = process(chunk)
 
-    if k.cmdline.debug_load then
+    if k.cmdline.debug_load or true then
       local handle = io.open("/load.txt", "a")
       handle:write(" -- load: ", name or "(no name)", " --\n", chunk)
       handle:close()
