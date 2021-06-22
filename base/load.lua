@@ -82,7 +82,7 @@ if (not k.cmdline.no_force_yields) then
 
     chunk = process(chunk)
 
-    if k.cmdline.debug_load or true then
+    if k.cmdline.debug_load then
       local handle = io.open("/load.txt", "a")
       handle:write(" -- load: ", name or "(no name)", " --\n", chunk)
       handle:close()
