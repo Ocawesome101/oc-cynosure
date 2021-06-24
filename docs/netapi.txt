@@ -1,0 +1,16 @@
+// CYNOSURE NETWORKING INTERFACE
+
+Cynosure provides a fairly simple method for abstraction of network protocols.
+
+Network modules should be included into extra/net/base.lua (--#include "extra/net/example.lua"), and should add an entry to the 'protocols' table structured like the following:
+
+    protocols[protocol] = {
+      socket = function(self, url, ...): stream,
+      request = function(self, url, ...): stream
+    }
+
+    This entry should be added as a key corresponding to the protocol;  to go along with the #include above, protocols["example"].  All URLs beginning with "example://" will henceforth be redirected to the "example" protocol.
+
+  'self' in both cases will be a string denoting the protocol used, useful for supporting multiple protocols with the same handler functions.
+
+  See extra/net/internet.lua for an example network handler.
