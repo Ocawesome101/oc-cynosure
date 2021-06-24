@@ -62,6 +62,7 @@ do
     checkArg(1, fmt, "string", "number")
     
     if type(fmt) == "number" then
+      if fmt == 0 then return "" end
       local read = ""
     
       repeat
