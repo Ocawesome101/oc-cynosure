@@ -88,14 +88,34 @@ if (not k.cmdline.no_force_yields) then
       handle:close()
     end
 
-    local last_yield = computer.uptime()
-    env.__internal_yield = function()
-      if computer.uptime() - last_yield > max_time then
-        last_yield = computer.uptime()
-        coroutine.yield(0)
-      end
-    end
+    env = env or k.userspace or _G
 
-    return old_load(chunk, name, mode, env)
+    local ok, err = old_load(chunk, name, mode, env)
+    if not ok then
+      return nil, err
+    end
+    return function(...)
+      local last_yield = computer.uptime()
+      local old_iyield = env.__internal_yield
+      local old_cyield = env.coroutine.yield
+      
+      env.__internal_yield = function()
+        if computer.uptime() - last_yield >= max_time then
+          last_yield = computer.uptime()
+          coroutine.yield(0.05)
+        end
+      end
+      
+      env.coroutine.yield = function(...)
+        last_yield = computer.uptime()
+        coroutine.yield(...)
+      end
+      
+      local result = table.pack(ok(...))
+      env.__internal_yield = old_iyield
+      env.coroutine.yield = old_cyield
+
+      return table.unpack(result)
+    end
   end
 end
