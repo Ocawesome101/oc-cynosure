@@ -48,7 +48,10 @@ do
   end
 
   function _base_stream:close()
-    self._base_stream = nil
+    if self._base_stream then
+      self._base_stream.close()
+      self._base_stream = nil
+    end
     return true
   end
 
