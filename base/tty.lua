@@ -31,7 +31,7 @@ do
   local function wrap_cursor(self)
     while self.cx > self.w do
     --if self.cx > self.w then
-      self.cx, self.cy = 1, self.cy + 1
+      self.cx, self.cy = math.max(1, self.cx - self.w), self.cy + 1
     end
     
     while self.cx < 1 do
