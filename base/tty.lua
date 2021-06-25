@@ -601,7 +601,7 @@ do
       proxy.getBackground = function()return f end
       proxy.getForeground = function()return b end
     end
-    
+
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
@@ -616,7 +616,7 @@ do
       fg = colors[8], -- the current foreground color
       bg = colors[1], -- the current background color
       rb = "", -- a buffer of characters read from the input
-      wb = ""  -- line buffering at its finest
+      wb = "", -- line buffering at its finest
     }, {__index = _stream})
 
     -- avoid gpu.getResolution calls

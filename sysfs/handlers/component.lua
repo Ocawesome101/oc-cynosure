@@ -6,7 +6,7 @@ do
   local n = {}
   local gpus, screens = {}, {}
   gpus[k.logio.gpu.address] = true
-  screens[k.logio.gpu.getScreen()] = true 
+  screens[k.logio.gpu.getScreen()] = true
 
   local function update_ttys(a, c)
     if c == "gpu" then
