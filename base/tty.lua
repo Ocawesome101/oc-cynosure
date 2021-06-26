@@ -330,10 +330,6 @@ do
     -- lazily convert tabs
     str = str:gsub("\t", "  ")
     
-    if self ~= k.logio then
-      k.log(k.loglevels.info, time)
-    end
-
     while #str > 0 do
       if computer.uptime() - time >= 4.8 then -- almost TLWY
         time = computer.uptime()
