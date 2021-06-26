@@ -1,0 +1,29 @@
+// CYNOSURE KERNEL ARGUMENTS
+
+The following kernel arguments are supported by the Cynosure kernel.
+
+  init=/PATH/TO/FILE
+    Specifies the script to load as init.  Defaults to /sbin/init.lua.
+
+  loglevel=LEVEL
+    Only print logs whose level is higher than LEVEL.  Defaults to 1.
+
+  nottylinebuffer
+    Disables the TTY line buffer.  Not recommended.
+
+  no_force_yields
+    Disables the kernel's pre-emptive multitasking feature.  May be useful for performance reasons.
+
+  debug_load
+    Write all of the load() wrapper's processed code to /load.txt.  Intended for debugging if you think the load() wrapper breaks your code.
+
+  max_process_time=NUMBER
+    The maximum time, in seconds, for which a process may run before it is forcibly yielded.  Defaults to 0.5.
+
+  log_process_death
+    Write process death information to the kernel log.  Intended for debugging.
+
+  root=TYPE=ADDRESS
+    If TYPE is "UUID", then the kernel will try to detect a filesystem on the specified drive or filesystem component.  Otherwise, if TYPE is "LABEL", the kernel will try to find a filesystem or partition whose label matches the specified one.  TYPE will default to "UUID" if it is not recognized.
+
+    If this option is not specified, computer.getBootAddress() will be used to determine the root filesystem.  Note that this functionality is deprecated and may be removed in a future version.
