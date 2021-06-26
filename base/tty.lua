@@ -242,18 +242,25 @@ do
         -- whether to send raw key input data according to the VT100 spec,
         -- rather than e.g. changing \r -> \n and capturing backspace
         self.attributes.raw = false
+
+        -- whether to show the terminal cursor
+        self.attributes.cursor = true
       elseif n == 1 then
         self.attributes.echo = true
       elseif n == 2 then
         self.attributes.line = true
       elseif n == 3 then
         self.attributes.raw = true
+      elseif n == 4 then
+        self.attributes.cursor = true
       elseif n == 11 then
         self.attributes.echo = false
       elseif n == 12 then
         self.attributes.line = false
       elseif n == 13 then
         self.attributes.raw = false
+      elseif n == 14 then
+        self.attributes.cursor = false
       end
     end
   end
@@ -320,12 +327,14 @@ do
     
     -- TODO: cursor logic is a bit brute-force currently, there are certain
     -- TODO: scenarios where cursor manipulation is unnecessary
-    local c, f, b = gpu.get(self.cx, self.cy)
-    gpu.setForeground(b)
-    gpu.setBackground(f)
-    gpu.set(self.cx, self.cy, c)
-    gpu.setForeground(self.fg)
-    gpu.setBackground(self.bg)
+    if self.attributes.cursor then
+      local c, f, b = gpu.get(self.cx, self.cy)
+      gpu.setForeground(b)
+      gpu.setBackground(f)
+      gpu.set(self.cx, self.cy, c)
+      gpu.setForeground(self.fg)
+      gpu.setBackground(self.bg)
+    end
     
     -- lazily convert tabs
     str = str:gsub("\t", "  ")
@@ -392,13 +401,15 @@ do
       end
     end
 
-    c, f, b = gpu.get(self.cx, self.cy)
+    if self.attributes.cursor then
+      c, f, b = gpu.get(self.cx, self.cy)
     
-    gpu.setForeground(b)
-    gpu.setBackground(f)
-    gpu.set(self.cx, self.cy, c)
-    gpu.setForeground(self.fg)
-    gpu.setBackground(self.bg)
+      gpu.setForeground(b)
+      gpu.setBackground(f)
+      gpu.set(self.cx, self.cy, c)
+      gpu.setForeground(self.fg)
+      gpu.setBackground(self.bg)
+    end
     
     return true
   end
@@ -601,7 +612,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {echo=true,line=true,raw=false}, -- terminal attributes
+      attributes = {echo=true,line=true,raw=false,cursor=false}, -- terminal attributes
       disabled = {}, -- disabled signals
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false, -- was a partial escape sequence written
