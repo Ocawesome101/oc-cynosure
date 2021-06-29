@@ -2,7 +2,7 @@
 -- Might even be better.  Famous last words!
 -- Copyright (c) 2021 i develop things under the DSLv1.
 
-_G.k = { cmdline = table.pack(...), modules = {} }
+_G.k = { cmdline = table.pack(...) }
 do
   local start = computer.uptime()
   function k.uptime()
