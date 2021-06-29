@@ -242,13 +242,15 @@ end
 
 obj.node = {getLabel = function() return "mtarfs" end}
 
+status(1, 3, "Loading kernel...")
+
 _G.__mtar_fs_tree = obj
 
-local hdl = assert(obj:open("/init.lua", "r"))
+local hdl = assert(obj:open("/boot/cynosure.lua", "r"))
 local ldme = hdl:read(hdl.node.length)
 hdl:close()
 
-assert(load(ldme, "=mtarfs:/init.lua", "t", _G))()
+assert(load(ldme, "=mtarfs:/boot/cynosure.lua", "t", _G))()
 
 -- concatenate mtar data past this line
 --[=======[Z
