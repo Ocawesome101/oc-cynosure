@@ -23,7 +23,7 @@ _G.main = function(arg)
     handle:write("--#include \"", inc, ".lua\"\n")
   end
   handle:close()
-  assert(loadfile("../utils/proc.lua"))("init.lua", "kernel.lua")
+  assert(loadfile(os.getenv("PREPROCESSOR") or "../utils/proc.lua"))("init.lua", "kernel.lua")
   log("warn", "cleaning up")
   --os.remove("includes.lua")
 end
