@@ -1,7 +1,17 @@
 -- requires environment variables
 
-_G.main = function()
-  local incl = (os.getenv "KMODS") or ""
+_G.env = {}
+
+for line in io.lines(".buildconfig") do
+  local k, v = line:match("^(.-)=(.+)$")
+  if v == "true" then v = true
+  elseif v == "false" then v = false
+  else v = tonumber(v) or v end
+  env[k] = os.getenv(k) or v
+end
+
+_G.main = function(arg)
+  local incl = env.KMODS or os.getenv("KMODS") or ""
   local include = {}
   for inc in incl:gmatch "[^,]+" do
     log("info", "including module ", inc)
@@ -13,7 +23,7 @@ _G.main = function()
     handle:write("--#include \"", inc, ".lua\"\n")
   end
   handle:close()
-  ex("../utils/proc.lua init.lua kernel.lua")
+  assert(loadfile("../utils/proc.lua"))("init.lua", "kernel.lua")
   log("warn", "cleaning up")
   --os.remove("includes.lua")
 end

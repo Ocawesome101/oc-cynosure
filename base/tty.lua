@@ -651,6 +651,10 @@ do
       k.sysfs.register(k.sysfs.types.tty, new, "/dev/tty"..ttyn)
       new.ttyn = ttyn
     end
+
+    if k.gpus then
+      k.gpus[ttyn] = proxy
+    end
     
     ttyn = ttyn + 1
     

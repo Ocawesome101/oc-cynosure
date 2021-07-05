@@ -1,1 +1,2 @@
 --#include "extra/net/base.lua"
+--#include "extra/getgpu.lua"
