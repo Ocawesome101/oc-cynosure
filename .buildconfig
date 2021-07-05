@@ -1,0 +1,3 @@
+KMODS=extra/net/base,extra/getgpu
+KRELEASE=1.03
+KCUSTOMNAME=default
