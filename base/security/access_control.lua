@@ -15,7 +15,8 @@ do
       HWINFO = 16,
       SETARCH = 32,
       MANAGE_USERS = 64,
-      BOOTADDR = 128
+      BOOTADDR = 128,
+      HOSTNAME = 256,
     },
     file = {
       OWNER_READ = 1,

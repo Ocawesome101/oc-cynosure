@@ -32,6 +32,23 @@ do
     return protocols[proto].request(proto, rest, ...)
   end
 
+  local hostname = "localhost"
+
+  function k.net.hostname()
+    return hostname
+  end
+
+  function k.net.sethostname(hn)
+    checkArg(1, hn, "string")
+    local perms = k.security.users.attributes(k.scheduler.info().owner).acls
+    if not k.security.acl.has_permission(perms,
+        k.security.acl.permissions.HOSTNAME) then
+      return nil, "insufficient permission"
+    end
+    hostname = hn
+    return true
+  end
+
   k.hooks.add("sandbox", function()
     k.userspace.package.loaded.network = k.util.copy_table(k.net)
   end)
