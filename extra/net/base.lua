@@ -42,7 +42,7 @@ do
     checkArg(1, hn, "string")
     local perms = k.security.users.attributes(k.scheduler.info().owner).acls
     if not k.security.acl.has_permission(perms,
-        k.security.acl.permissions.HOSTNAME) then
+        k.security.acl.permissions.user.HOSTNAME) then
       return nil, "insufficient permission"
     end
     hostname = hn
