@@ -43,10 +43,8 @@ do
     new:add_thread(args.func)
     processes[new.pid] = new
     
-    if k.sysfs then
-      assert(k.sysfs.register(k.sysfs.types.process, new, "/proc/"..math.floor(
+    assert(k.sysfs.register(k.sysfs.types.process, new, "/proc/"..math.floor(
         new.pid)))
-    end
     
     return new
   end
@@ -147,9 +145,8 @@ do
     end
 
     local ppt = "/proc/" .. math.floor(proc.pid)
-    if k.sysfs then
-      k.sysfs.unregister(ppt)
-    end
+    k.sysfs.unregister(ppt)
+    
     processes[proc.pid] = nil
   end
 

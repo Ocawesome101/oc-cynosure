@@ -463,7 +463,7 @@ do
     end
     
     device, err = fs.get_filesystem_driver(node)
-    if k.sysfs and not device then
+    if not device then
       local sdev, serr = k.sysfs.retrieve(node)
       if not sdev then return nil, serr end
       device, err = fs.get_filesystem_driver(sdev)
