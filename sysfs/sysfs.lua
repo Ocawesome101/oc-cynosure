@@ -153,6 +153,7 @@ do
       read = n.read or ferr,
       write = n.write or ferr,
       seek = n.seek or ferr,
+      flush = n.flush,
       close = n.close or fclose
     }
   end

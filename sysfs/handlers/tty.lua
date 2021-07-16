@@ -11,7 +11,8 @@ do
       end,
       write = function(_, d)
         return tty:write(d)
-      end
+      end,
+      flush = function() return tty:flush() end
     }
   end
 
