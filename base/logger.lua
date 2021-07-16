@@ -77,4 +77,4 @@ do
   end
 end
 
-k.log(k.loglevels.info, "Starting\27[93m", _OSVERSION, "\27[37m")
+k.log(math.huge, "Starting\27[93m", _OSVERSION, "\27[37m")
