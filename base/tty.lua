@@ -312,6 +312,10 @@ do
         local ln = self.wb:match("(.-\n)")
         self.wb = self.wb:sub(#ln + 1)
         return self:write_str(ln)
+      elseif #self.wb > 2048 then
+        local ln = self.wb
+        self.wb = ""
+        return self:write_str(ln)
       end
     else
       return self:write_str(str)
@@ -472,7 +476,8 @@ do
           (ch == 31 and 63) or ch
         ):upper()
     
-      if sigacts[tch] and not self.disabled[tch] and k.scheduler.processes then
+      if sigacts[tch] and not self.disabled[tch] and k.scheduler.processes
+          and not self.attributes.raw then
         -- fairly stupid method of determining the foreground process:
         -- find the highest PID associated with this TTY
         -- yeah, it's stupid, but it should work in most cases.
@@ -480,11 +485,11 @@ do
         local mxp = 0
 
         for k, v in pairs(k.scheduler.processes) do
-          if v.io.stdout.base and v.io.stdout.base.ttyn == self.ttyn then
+          if v.io.stdout.tty == self.ttyn then
             mxp = math.max(mxp, k)
-          elseif v.io.stdin.base and v.io.stdin.base.ttyn == self.ttyn then
+          elseif v.io.stdin.tty == self.ttyn then
             mxp = math.max(mxp, k)
-          elseif v.io.stderr.base and v.io.stderr.base.ttyn == self.ttyn then
+          elseif v.io.stderr.tty == self.ttyn then
             mxp = math.max(mxp, k)
           end
         end
@@ -536,18 +541,21 @@ do
 
     self:flush()
 
+    local dd = self.disabled.D or self.attributes.raw
+
     if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n)
-          and not self.rb:find("\4") do
+          and not (self.rb:find("\4") and not dd) do
         coroutine.yield()
       end
     else
-      while #self.rb < n and (self.attributes.raw or not self.rb:find("\4")) do
+      while #self.rb < n and (self.attributes.raw or not
+          (self.rb:find("\4") and not dd)) do
         coroutine.yield()
       end
     end
 
-    if self.rb:find("\4") then
+    if self.rb:find("\4") and not dd then
       self.rb = ""
       return nil
     end
@@ -651,6 +659,8 @@ do
       k.sysfs.register(k.sysfs.types.tty, new, "/dev/tty"..ttyn)
       new.ttyn = ttyn
     end
+
+    new.tty = ttyn
 
     if k.gpus then
       k.gpus[ttyn] = proxy
