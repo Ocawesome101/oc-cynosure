@@ -37,7 +37,8 @@ do
     local mt = {
       __index = tbl,
       __newindex = protecc,
-      __pairs = tbl,
+      __pairs = function() return pairs(tbl) end,
+      __ipairs = function() return ipairs(tbl) end,
       __metatable = {}
     }
   
