@@ -32,6 +32,8 @@ do
   end
 
   function os.exit(n)
+    checkArg(1, n, "number", "nil")
+    n = n or 0
     coroutine.yield("__internal_process_exit", n)
   end
 end

@@ -14,7 +14,7 @@ if (not k.cmdline.no_force_yields) then
 
   local old_load = load
 
-  local max_time = tonumber(k.cmdline.max_process_time) or 0.5
+  local max_time = tonumber(k.cmdline.max_process_time) or 0.1
 
   local function process_section(s)
     for i=1, #patterns, 1 do

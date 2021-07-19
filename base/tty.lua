@@ -484,19 +484,22 @@ do
         -- and where it doesn't the shell should handle it.
         local mxp = 0
 
-        for k, v in pairs(k.scheduler.processes) do
+        for _k, v in pairs(k.scheduler.processes) do
+          --k.log(k.loglevels.error, _k, v.name)
           if v.io.stdout.tty == self.ttyn then
-            mxp = math.max(mxp, k)
+            mxp = math.max(mxp, _k)
           elseif v.io.stdin.tty == self.ttyn then
-            mxp = math.max(mxp, k)
+            mxp = math.max(mxp, _k)
           elseif v.io.stderr.tty == self.ttyn then
-            mxp = math.max(mxp, k)
+            mxp = math.max(mxp, _k)
           end
         end
 
-        --k.log(k.loglevels.info, "sending", sigacts[tch], "to", k.scheduler.processes[mxp].name)
+        --k.log(k.loglevels.error, "sending", sigacts[tch], "to", mxp == 0 and mxp or k.scheduler.processes[mxp].name)
 
-        k.scheduler.processes[mxp]:signal(sigacts[tch])
+        if mxp > 0 then
+          k.scheduler.processes[mxp]:signal(sigacts[tch])
+        end
 
         self.rb = ""
         if tch == "\4" then self.rb = tch end
