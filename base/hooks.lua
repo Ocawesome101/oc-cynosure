@@ -17,6 +17,7 @@ do
   function k.hooks.call(name, ...)
     checkArg(1, name, "string")
 
+    k.log(k.loglevels.debug, "calling hook ", name)
     if hooks[name] then
       for k, v in ipairs(hooks[name]) do
         v(...)
