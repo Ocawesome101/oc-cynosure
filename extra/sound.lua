@@ -42,6 +42,11 @@ do
     --#include "extra/sound/sound.lua"
   }
 
+  function api.play(notes)
+    checkArg(1, notes, "table")
+    return card_handlers[api.CARD_TYPE].play(notes)
+  end
+
   local chandler = function(s, add, typ)
     s = s == "component_added"
     if s then
@@ -56,6 +61,21 @@ do
       if component_cache[typ] then
         component_cache[typ] = component.proxy(component_cache[typ])
       end
+    end
+    if component_cache.sound or component_cache.noise or
+        component_cache.beep then
+      api.MAX_CHANNELS = 8
+    else
+      api.MAX_CHANNELS = 1
+    end
+    if component_cache.sound then
+      api.CARD_TYPE = "sound"
+    elseif component_cache.noise then
+      api.CARD_TYPE = "noise"
+    elseif component_cache.beep then
+      api.CARD_TYPE = "beep"
+    else
+      api.CARD_TYPE = "computer.beep"
     end
   end
 
