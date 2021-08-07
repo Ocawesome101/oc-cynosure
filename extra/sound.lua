@@ -56,7 +56,7 @@ do
           component_cache[typ] = component.proxy(card)
         end
       end
-    elseif component_cache[typ] == add then
+    elseif component_cache[typ] and component_cache[typ].address == add then
       component_cache[typ] = component.list(typ, true)()
       if component_cache[typ] then
         component_cache[typ] = component.proxy(component_cache[typ])

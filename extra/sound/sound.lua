@@ -1,4 +1,4 @@
-    {
+    sound = {
       voices = { [api.voice.SQUARE] = true, [api.voice.SINE] = true,
         [api.voice.TRIANGLE] = true, [api.voice.SAWTOOTH] = true,
         [api.voice.NOISE] = true },
@@ -6,16 +6,18 @@
       play = function(tab)
         local card = component_cache.sound
         if card then
-          for i=1, #tab, 1 do
-            local freq, dur, vol, voi = table.unpack(tab[i])
+          local dur = 0
+          for i in pairs(tab) do
+            local freq, _dur, vol, voi = table.unpack(tab[i])
+            dur = math.max(dur, _dur)
             card.open(i)
             card.setFrequency(i, freq)
-            card.setADSR(tab[i], 0, dur, 0.25, dur // 2)
+            card.setADSR(i, 0, _dur, 0.25, _dur // 2)
             if vol then card.setVolume(i, vol / 100) end
-            if voi then card.setWave(i, voi) end
-            card.delay()
+            if voi then card.setWave(i, card.modes[voi]) end
           end
-          card.process()
+          card.delay(dur or 0)
+          for i=1, 10, 1 do card.process() end
           for i=1, #tab, 1 do card.close(i) end
         end
       end,

@@ -1,4 +1,4 @@
-    {
+    beep = {
       voices = { [api.voice.SINE] = true },
       channels = 8,
       play = function(tab)
