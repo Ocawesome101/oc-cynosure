@@ -17,7 +17,7 @@ do
   }
   
   package.loaded = loaded
-  package.path = "/lib/?.lua;/lib/lib?.lua;/lib/?/init.lua"
+  package.path = "/lib/?.lua;/lib/lib?.lua;/lib/?/init.lua;/usr/lib/?.lua;/usr/lib/lib?.lua;/usr/lib/?/init.lua"
   
   local fs = k.fs.api
 

@@ -94,6 +94,8 @@ if (not k.cmdline.no_force_yields) then
     if not ok then
       return nil, err
     end
+    
+    local ysq = {}
     return function(...)
       local last_yield = computer.uptime()
       local old_iyield = env.__internal_yield
@@ -102,13 +104,16 @@ if (not k.cmdline.no_force_yields) then
       env.__internal_yield = function()
         if computer.uptime() - last_yield >= max_time then
           last_yield = computer.uptime()
-          coroutine.yield(0.05)
+          local msg = table.pack(old_cyield(0.05))
+          if msg.n > 0 then ysq[#ysq+1] = msg end
         end
       end
       
       env.coroutine.yield = function(...)
         last_yield = computer.uptime()
-        coroutine.yield(...)
+        local msg = table.pack(old_cyield(...))
+        ysq[#ysq+1] = msg
+        return table.unpack(table.remove(ysq, 1))
       end
       
       local result = table.pack(ok(...))

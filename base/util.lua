@@ -134,11 +134,13 @@ do
       if self.closed and #self.rb == 0 then
         return nil
       end
-      while #self.rb < n and not self.closed do
-        if self.from ~= 0 then
-          k.scheduler.info().data.self.resume_next = self.from
+      if not self.closed then
+        while #self.rb < n do
+          if self.from ~= 0 then
+            k.scheduler.info().data.self.resume_next = self.from
+          end
+          coroutine.yield()
         end
-        coroutine.yield()
       end
       local data = self.rb:sub(1, n)
       self.rb = self.rb:sub(n + 1)
@@ -163,11 +165,13 @@ do
     end
 
     function util.make_pipe()
-      return k.create_fstream(setmetatable({
+      local new = k.create_fstream(setmetatable({
         from = 0, -- the process providing output
         to = 0, -- the process reading input
         rb = "",
       }, {__index = _pipe}), "rw")
+      new.buffer_mode = "none"
+      return new
     end
 
     k.hooks.add("sandbox", function()

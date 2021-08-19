@@ -170,6 +170,8 @@ do
       if n == 0 then
         self.fg = colors[8]
         self.bg = colors[1]
+        self.gpu.setForeground(self.fg)
+        self.gpu.setBackground(self.bg)
         self.attributes.echo = true
       elseif n == 8 then
         self.attributes.echo = false
