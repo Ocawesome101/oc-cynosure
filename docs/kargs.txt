@@ -12,13 +12,13 @@ The following kernel arguments are supported by the Cynosure kernel.
     Disables the TTY line buffer.  Not recommended.
 
   no_force_yields
-    Disables the kernel's pre-emptive multitasking feature.  May be useful for performance reasons.
+    Disables the kernel's pre-emptive multitasking feature.  May be useful for performance reasons, or for testing if the load() wrapper breaks your code.
 
   debug_load
     Write all of the load() wrapper's processed code to /load.txt.  Intended for debugging if you think the load() wrapper breaks your code.
 
   max_process_time=NUMBER
-    The maximum time, in seconds, for which a process may run before it is forcibly yielded.  Defaults to 0.5.
+    The maximum time, in seconds, for which a process may run before it is forcibly yielded.  Defaults to 0.1.
 
   log_process_death
     Write process death information to the kernel log.  Intended for debugging.
@@ -27,3 +27,6 @@ The following kernel arguments are supported by the Cynosure kernel.
     If TYPE is "UUID", then the kernel will try to detect a filesystem on the specified drive or filesystem component.  Otherwise, if TYPE is "LABEL", the kernel will try to find a filesystem or partition whose label matches the specified one.  TYPE will default to "UUID" if it is not recognized.
 
     If this option is not specified, computer.getBootAddress() will be used to determine the root filesystem.  Note that this functionality is deprecated and may be removed in a future version.
+
+  no_wrap_coroutine
+    Do not wrap the version of the coroutine API presented to userspace.  There should be little reason to use this option, since Cynosure's wrapper only adds features.  Only use for testing if you think this wrapper breaks something related to coroutines.
