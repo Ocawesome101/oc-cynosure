@@ -10,11 +10,11 @@ do
   local old_coroutine = coroutine
   local _coroutine = {}
   _G.coroutine = _coroutine
-  -- [[
-  k.hooks.add("sandbox", function()
-    k.userspace.coroutine = old_coroutine
-  end)
-  --]]
+  if k.cmdline.no_wrap_coroutine then
+    k.hooks.add("sandbox", function()
+      k.userspace.coroutine = old_coroutine
+    end)
+  end
   
   function _coroutine.create(func)
     checkArg(1, func, "function")
