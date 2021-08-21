@@ -27,8 +27,8 @@ do
     local new = k.create_process {
       name = args.name,
       parent = parent.pid or 0,
-      stdin = parent.stdin or (io and io.input()) or args.stdin,
-      stdout = parent.stdout or (io and io.output()) or args.stdout,
+      stdin = args.stdin or parent.stdin or (io and io.input()),
+      stdout = args.stdout or parent.stdout or (io and io.output()),
       stderr = args.stderr or parent.stderr or (io and io.stderr),
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),

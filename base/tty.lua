@@ -488,11 +488,11 @@ do
 
         for _k, v in pairs(k.scheduler.processes) do
           --k.log(k.loglevels.error, _k, v.name)
-          if v.io.stdout.tty == self.ttyn then
+          if v.io.stderr.tty == self.ttyn then
             mxp = math.max(mxp, _k)
           elseif v.io.stdin.tty == self.ttyn then
             mxp = math.max(mxp, _k)
-          elseif v.io.stderr.tty == self.ttyn then
+          elseif v.io.stdout.tty == self.ttyn then
             mxp = math.max(mxp, _k)
           end
         end
