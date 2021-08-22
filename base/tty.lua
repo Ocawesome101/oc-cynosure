@@ -120,13 +120,18 @@ do
     self.cx = self.cx - n
   end
 
-  -- incompatibility: terminal-specific command for clearing a portion of the
-  -- screen
-  function commands:F(args)
-    if #args < 4 then return end
-    args[1] = math.max(1, math.min(args[1], self.w))
-    args[2] = math.max(1, math.min(args[2], self.h))
-    self.gpu.fill(args[1], args[2], args[3], args[4], " ")
+  -- incompatibility: terminal-specific command for calling advanced GPU
+  -- functionality
+  function commands:g(args)
+    if #args < 1 then return end
+    local cmd = table.remove(args, 1)
+    if cmd == 0 then
+      if #args < 4 then return end
+      args[1] = math.max(1, math.min(args[1], self.w))
+      args[2] = math.max(1, math.min(args[2], self.h))
+      self.gpu.fill(args[1], args[2], args[3], args[4], " ")
+    end
+    -- TODO more commands
   end
 
   function commands:G()
