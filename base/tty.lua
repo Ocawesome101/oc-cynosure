@@ -637,16 +637,20 @@ do
       local fg, bg = proxy.setForeground, proxy.setBackground
       local f, b = colors[1], colors[8]
       function proxy.setForeground(c)
-        if c >= 0xAAAAAA or c <= 0x111111 and f ~= c then
+        -- [[
+        if c >= 0xAAAAAA or c <= 0x000000 and f ~= c then
           fg(c)
         end
         f = c
+        --]]
       end
       function proxy.setBackground(c)
-        if c >= 0xAAAAAA or c <= 0x111111 and b ~= c then
+        -- [[
+        if c >= 0xDDDDDD or c <= 0x000000 and b ~= c then
           bg(c)
         end
         b = c
+        --]]
       end
       proxy.getBackground = function()return f end
       proxy.getForeground = function()return b end
