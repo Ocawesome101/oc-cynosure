@@ -23,6 +23,7 @@ do
 
       -- create a TTY on top of a GPU and optional screen
       create = function(gpu, screen)
+        if type(gpu) == "table" then screen = screen or gpu.getScreen() end
         local raw = k.create_tty(gpu, screen)
         deletable[raw.ttyn] = raw
         local prox = io.open(string.format("/sys/dev/tty%d", raw.ttyn), "rw")

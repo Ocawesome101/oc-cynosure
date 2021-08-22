@@ -239,9 +239,13 @@ do
   --   - 1: enable echo
   --   - 2: enable line mode
   --   - 3: enable raw mode
+  --   - 4: show cursor
+  --   - 5: undo 15
   --   - 11: disable echo
   --   - 12: disable line mode
   --   - 13: disable raw mode
+  --   - 14: hide cursor
+  --   - 15: disable all input and output
   function control:c(args)
     args[1] = args[1] or 0
     
@@ -269,6 +273,8 @@ do
         self.attributes.raw = true
       elseif n == 4 then
         self.attributes.cursor = true
+      elseif n == 5 then
+        self.attributes.xoff = false
       elseif n == 11 then
         self.attributes.echo = false
       elseif n == 12 then
@@ -277,6 +283,8 @@ do
         self.attributes.raw = false
       elseif n == 14 then
         self.attributes.cursor = false
+      elseif n == 15 then
+        self.attributes.xoff = true
       end
     end
   end
@@ -540,11 +548,13 @@ do
       end
     end
     
-    if self.attributes.echo then
+    if self.attributes.echo and not self.attributes.xoff then
       self:write_str(tw or "")
     end
     
-    self.rb = string.format("%s%s", self.rb, char)
+    if not self.attributes.xoff then
+      self.rb = string.format("%s%s", self.rb, char)
+    end
   end
 
   function _stream:clipboard(...)
@@ -581,7 +591,6 @@ do
 
     local data = self.rb:sub(1, n)
     self.rb = self.rb:sub(n + 1)
-    -- component.invoke(component.list("ocemu")(), "log", '"'..data..'"', #data)
     return data
   end
 
@@ -646,7 +655,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {echo=true,line=true,raw=false,cursor=false}, -- terminal attributes
+      attributes = {echo=true,line=true,raw=false,cursor=false,xoff=false}, -- terminal attributes
       disabled = {}, -- disabled signals
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false, -- was a partial escape sequence written
