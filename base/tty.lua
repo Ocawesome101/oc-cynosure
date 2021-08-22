@@ -40,13 +40,13 @@ do
     
     while self.cy < 1 do
       self.cy = self.cy + 1
-      self.gpu.copy(1, 1, self.w, self.h, 0, 1)
+      self.gpu.copy(1, 1, self.w, self.h - 1, 0, 1)
       self.gpu.fill(1, 1, self.w, 1, " ")
     end
     
     while self.cy > self.h do
       self.cy = self.cy - 1
-      self.gpu.copy(1, 1, self.w, self.h, 0, -1)
+      self.gpu.copy(1, 2, self.w, self.h, 0, -1)
       self.gpu.fill(1, self.h, self.w, 1, " ")
     end
   end
@@ -118,6 +118,15 @@ do
   function commands:D(args)
     local n = math.max(args[1] or 0, 1)
     self.cx = self.cx - n
+  end
+
+  -- incompatibility: terminal-specific command for clearing a portion of the
+  -- screen
+  function commands:F(args)
+    if #args < 4 then return end
+    args[1] = math.max(1, math.min(args[1], self.w))
+    args[2] = math.max(1, math.min(args[2], self.h))
+    self.gpu.fill(args[1], args[2], args[3], args[4], " ")
   end
 
   function commands:G()
