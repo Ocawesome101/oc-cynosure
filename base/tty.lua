@@ -576,6 +576,7 @@ do
   end
 
   function _stream:close()
+    self:flush()
     self.closed = true
     self.read = closed
     self.write = closed
@@ -592,12 +593,18 @@ do
   -- this is the raw function for creating TTYs over components
   -- userspace gets somewhat-abstracted-away stuff
   function k.create_tty(gpu, screen)
-    checkArg(1, gpu, "string")
-    checkArg(2, screen, "string")
+    checkArg(1, gpu, "string", "table")
+    checkArg(2, screen, "string", "nil")
 
-    local proxy = component.proxy(gpu)
+    local proxy
+    if type(gpu) == "string" then
+      proxy = component.proxy(gpu)
 
-    proxy.bind(screen)
+      if screen then proxy.bind(screen) end
+    else
+      proxy = gpu
+    end
+
     proxy.setForeground(colors[8])
     proxy.setBackground(colors[1])
 
@@ -645,9 +652,11 @@ do
     proxy.setResolution(new.w, new.h)
     proxy.fill(1, 1, new.w, new.h, " ")
     
-    -- register all keyboards attached to the screen
-    for _, keyboard in pairs(component.invoke(screen, "getKeyboards")) do
-      new.keyboards[keyboard] = true
+    if screen then
+      -- register all keyboards attached to the screen
+      for _, keyboard in pairs(component.invoke(screen, "getKeyboards")) do
+        new.keyboards[keyboard] = true
+      end
     end
     
     -- register a keypress handler
