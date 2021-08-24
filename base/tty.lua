@@ -474,6 +474,10 @@ do
     if signal[3] == 0 and signal[4] == 0 then
       return
     end
+
+    if self.xoff then
+      return
+    end
     
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
