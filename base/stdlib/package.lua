@@ -89,7 +89,7 @@ do
     local data = handle:read("a")
     handle:close()
 
-    return load(data, "="..file, "bt", k.userspace or _G)
+    return load(data, "="..file, "bt", env or k.userspace or _G)
   end
 
   function _G.dofile(file)
