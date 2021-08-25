@@ -273,14 +273,14 @@ do
       checkArg(1, pid, "number", "nil")
       checkArg(2, signal, "number")
       
-      local cur = current
+      local cur = processes[current]
       local atmp = processes[pid]
       
       if not atmp then
         return true
       end
       
-      if (atmp or {owner=current.owner}).owner ~= cur.owner and
+      if (atmp or {owner=processes[current].owner}).owner ~= cur.owner and
          cur.owner ~= 0 then
         return nil, "permission denied"
       end
