@@ -154,7 +154,7 @@ do
     local n = args[1] or 0
     
     if n == 0 then
-      self.gpu.fill(1, self.cy, self.w, self.h, " ")
+      self.gpu.fill(1, self.cy, self.w, self.h - self.cy, " ")
     elseif n == 1 then
       self.gpu.fill(1, 1, self.w, self.cy, " ")
     elseif n == 2 then
@@ -223,13 +223,13 @@ do
 
   function commands:S(args)
     local n = args[1] or 1
-    self.gpu.copy(1, 1, self.w, self.h, 0, -n)
+    self.gpu.copy(1, n, self.w, self.h, 0, -n)
     self.gpu.fill(1, self.h, self.w, n, " ")
   end
 
   function commands:T(args)
     local n = args[1] or 1
-    self.gpu.copy(1, 1, self.w, self.h, 0, n)
+    self.gpu.copy(1, 1, self.w, self.h-n, 0, n)
     self.gpu.fill(1, 1, self.w, n, " ")
   end
 
