@@ -4,10 +4,11 @@ k.log(k.loglevels.info, "base/load")
 
 if (not k.cmdline.no_force_yields) then
   local patterns = {
+    --[[
     { "if([ %(])(.-)([ %)])then([ \n])", "if%1%2%3then%4__internal_yield() " },
     { "elseif([ %(])(.-)([ %)])then([ \n])", "elseif%1%2%3then%4__internal_yield() " },
-    { "([ \n])else([ \n])", "%1else%2__internal_yield() " },
-    { "while([ %(])(.-)([ %)])do([ \n])", "while%1%2%3do%4__internal_yield() " },
+    { "([ \n])else([ \n])", "%1else%2__internal_yield() " },]]
+    { "while([ %(])(.-)([ %)])do([ \n])", "while%1%2%3do%4__internal_yield() "},
     { "for([ %(])(.-)([ %)])do([ \n])", "for%1%2%3do%4__internal_yield() " },
     { "repeat([ \n])", "repeat%1__internal_yield() " },
   }
@@ -110,6 +111,9 @@ if (not k.cmdline.no_force_yields) then
       end
       
       env.coroutine.yield = function(...)
+        if #ysq > 0 then
+          return table.unpack(table.remove(ysq, 1))
+        end
         last_yield = computer.uptime()
         local msg = table.pack(old_cyield(...))
         ysq[#ysq+1] = msg
