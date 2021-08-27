@@ -136,12 +136,15 @@ do
   
   local ios = k.create_fstream(k.logio, "rw")
   ios.buffer_mode = "none"
+  ios.tty = 0
   
   k.scheduler.spawn {
     name = "init",
     func = ok,
     input = ios,
     output = ios,
+    stdin = ios,
+    stdout = ios,
     stderr = ios
   }
 

@@ -3,6 +3,12 @@
 k.log(k.loglevels.info, "base/scheduler")
 
 do
+  local globalenv = {
+    UID = 0,
+    USER = "root",
+    TERM = "cynosure"
+  }
+
   local processes = {}
   local current
 
@@ -33,13 +39,13 @@ do
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
-      env = setmetatable(args.env or {}, {__index = parent.env,
-        __metatable = {}})
+      env = args.env or {}
     }
 
-    -- this is kind of ugly, but it works
-    new.env.TERM = new.env.TERM or "cynosure"
-    
+    for k, v in pairs(parent.env or globalenv) do
+      new.env[k] = new.env[k] or v
+    end
+
     new:add_thread(args.func)
     processes[new.pid] = new
     
