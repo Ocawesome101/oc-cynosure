@@ -134,8 +134,8 @@ do
     -- TODO more commands
   end
 
-  function commands:G()
-    self.cx = 1
+  function commands:G(args)
+    self.cx = math.max(1, math.min(self.w, args[1] or 1))
   end
 
   function commands:H(args)
