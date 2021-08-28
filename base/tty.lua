@@ -125,11 +125,14 @@ do
   function commands:g(args)
     if #args < 1 then return end
     local cmd = table.remove(args, 1)
-    if cmd == 0 then
+    if cmd == 0 then -- fill
       if #args < 4 then return end
       args[1] = math.max(1, math.min(args[1], self.w))
       args[2] = math.max(1, math.min(args[2], self.h))
       self.gpu.fill(args[1], args[2], args[3], args[4], " ")
+    elseif cmd == 1 then -- copy
+      if #args < 6 then return end
+      self.gpu.copy(args[1], args[2], args[3], args[4], args[5], args[6])
     end
     -- TODO more commands
   end
@@ -388,7 +391,7 @@ do
           self.esc = ""
 
           local separator, raw_args, code = esc:match(
-            "\27([%[%?])([%d;]*)([a-zA-Z])")
+            "\27([%[%?])([%-%d;]*)([a-zA-Z])")
           raw_args = raw_args or "0"
           
           local args = {}

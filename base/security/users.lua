@@ -64,9 +64,11 @@ do
     checkArg(4, pname, "string", "nil")
     checkArg(5, wait, "boolean", "nil")
     
-    if not k.security.acl.user_has_permission(k.scheduler.info().owner,
-        k.security.acl.permissions.user.SUDO) then
-      return nil, "permission denied: no permission"
+    if k.scheduler.info().owner ~= 0 then
+      if not k.security.acl.user_has_permission(k.scheduler.info().owner,
+          k.security.acl.permissions.user.SUDO) then
+        return nil, "permission denied: no permission"
+      end
     end
     
     if not api.authenticate(uid, pass) then
@@ -125,6 +127,8 @@ do
   function api.usermod(attributes)
     checkArg(1, attributes, "table")
     attributes.uid = tonumber(attributes.uid) or (#passwd + 1)
+
+    k.log(k.loglevels.debug, "changing attributes for user " .. attributes.uid)
     
     local current = k.scheduler.info().owner or 0
     
@@ -139,30 +143,35 @@ do
         return nil, "cannot change password: permission denied"
       end
       for k, v in pairs(passwd[attributes.uid]) do
-        attributes[k] = v
+        attributes[k] = attributes[k] or v
       end
     end
 
     attributes.home = attributes.home or "/home/" .. attributes.name
+    k.log(k.loglevels.debug, "shell = " .. attributes.shell)
     attributes.shell = (attributes.shell or "/bin/lsh"):gsub("%.lua$", "")
+    k.log(k.loglevels.debug, "shell = " .. attributes.shell)
 
     local acl = k.security.acl
-    local acls = 0
-    for k, v in pairs(attributes.acls) do
-      if acl.permissions.user[k] and v then
-        acls = acls & acl.permissions.user[k]
-        if not acl.user_has_permission(current, acl.permissions.user[k])
-            and current ~= 0 then
-          return nil, k .. ": ACL permission denied"
+    if type(attributes.acls) == "table" then
+      local acls = 0
+      
+      for k, v in pairs(attributes.acls) do
+        if acl.permissions.user[k] and v then
+          acls = acls | acl.permissions.user[k]
+          if not acl.user_has_permission(current, acl.permissions.user[k])
+              and current ~= 0 then
+            return nil, k .. ": ACL permission denied"
+          end
+        else
+          return nil, k .. ": no such ACL"
         end
-      else
-        return nil, k .. ": no such ACL"
       end
+
+      attributes.acls = acls
     end
 
-    attributes.acls = acls
-
-    passwd[attributes.uid] = attributes
+    passwd[tonumber(attributes.uid)] = attributes
 
     return true
   end

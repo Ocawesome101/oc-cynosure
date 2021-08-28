@@ -26,19 +26,42 @@ do
   if lgpu and lscr then
     k.logio = k.create_tty(lgpu, lscr)
     
-    function k.log(level, ...)
-      local msg = safe_concat(...)
-      msg = msg:gsub("\t", "  ")
+    if k.cmdline.bootsplash then
+      function k.log() end
 
-      if k.util and not k.util.concat then
-        k.util.concat = safe_concat
+      -- TODO custom bootsplash support
+      local splash = {
+        "   ⢀⣠⣴⣾⠿⠿⢿⣿⣶⣤⣀    ",
+        " ⢀⣴⣿⣿⠋     ⠉⠻⢿⣷⣄  ",
+        "⢀⣾⣿⣿⠏        ⠈⣿⣿⣆ ",
+        "⣾⣿⣿⡟   ⢀⣾⣿⣿⣦⣄⣠⣿⣿⣿⡆",
+        "⣿⣿⣿⠁   ⠘⠿⢿⣿⣿⣿⣿⣿⣿⣿⡇",
+        "⢻⣿⣿⣄⡀     ⠉⢻⣿⣿⣿⣿⣿⠃",
+        "                  ",
+        "                  ",
+        "                  "
+      }
+
+      lgpu.setBackground(0)
+      lgpu.setForeground(0x66B6FF)
+      local w, h = lgpu.maxResolution()
+      lgpu.setResolution(w, h)
+      lgpu.fill(1, 1, w, h, " ")
+    else
+      function k.log(level, ...)
+        local msg = safe_concat(...)
+        msg = msg:gsub("\t", "  ")
+  
+        if k.util and not k.util.concat then
+          k.util.concat = safe_concat
+        end
+      
+        if (tonumber(k.cmdline.loglevel) or 1) <= level then
+          k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),
+            msg))
+        end
+        return true
       end
-    
-      if (tonumber(k.cmdline.loglevel) or 1) <= level then
-        k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),
-          msg))
-      end
-      return true
     end
   else
     k.logio = nil
