@@ -3,6 +3,7 @@
 do
   local arg_pattern = "^(.-)=(.+)$"
   local orig_args = k.cmdline
+  k.__original_cmdline = orig_args
   k.cmdline = {}
 
   for i=1, #orig_args, 1 do

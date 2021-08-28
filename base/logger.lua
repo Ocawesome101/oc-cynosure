@@ -27,6 +27,7 @@ do
     k.logio = k.create_tty(lgpu, lscr)
     
     if k.cmdline.bootsplash then
+      local lgpu = component.proxy(lgpu)
       function k.log() end
 
       -- TODO custom bootsplash support
@@ -37,16 +38,22 @@ do
         "⣾⣿⣿⡟   ⢀⣾⣿⣿⣦⣄⣠⣿⣿⣿⡆",
         "⣿⣿⣿⠁   ⠘⠿⢿⣿⣿⣿⣿⣿⣿⣿⡇",
         "⢻⣿⣿⣄⡀     ⠉⢻⣿⣿⣿⣿⣿⠃",
+        " ⢻⣿⣿⣿⣿⣶⣆⡀  ⢸⣿⣿⣿⣿⠃ ",
+        "  ⠙⢿⣿⣿⣿⣿⣿⣷⣿⣿⣿⣿⠟⠁  ",
+        "    ⠈⠙⠻⠿⠿⠿⠿⠛⠉     ",
         "                  ",
-        "                  ",
-        "                  "
+        "     CYNOSURE     ",
       }
 
       lgpu.setBackground(0)
       lgpu.setForeground(0x66B6FF)
       local w, h = lgpu.maxResolution()
+      local x, y = (w // 2) - (#splash[1] // 2) + 2, (h // 2) - (#splash // 2)
       lgpu.setResolution(w, h)
       lgpu.fill(1, 1, w, h, " ")
+      for i, line in ipairs(splash) do
+        lgpu.set(x, y + i - 1, line)
+      end
     else
       function k.log(level, ...)
         local msg = safe_concat(...)

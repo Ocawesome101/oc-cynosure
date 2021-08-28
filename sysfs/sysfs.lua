@@ -3,6 +3,7 @@
 k.log(k.loglevels.info, "sysfs/sysfs")
 
 do
+  local cmdline = table.concat(k.__original_cmdline, " ") .. "\n"
   local tree = {
     dir = true,
     components = {
@@ -52,6 +53,18 @@ do
       end,
       write = function()
         return nil, "bad file descriptor"
+      end
+    },
+    cmdline = {
+      dir = false,
+      read = function(self, n)
+        self.__ptr = self.__ptr or 0
+        if self.__ptr >= #cmdline then
+          return nil
+        else
+          self.__ptr = self.__ptr + n
+          return cmdline:sub(self.__ptr - n, self.__ptr)
+        end
       end
     }
   }
