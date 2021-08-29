@@ -32,27 +32,31 @@ do
 
       -- TODO custom bootsplash support
       local splash = {
-        "   ⢀⣠⣴⣾⠿⠿⢿⣿⣶⣤⣀    ",
-        " ⢀⣴⣿⣿⠋     ⠉⠻⢿⣷⣄  ",
-        "⢀⣾⣿⣿⠏        ⠈⣿⣿⣆ ",
-        "⣾⣿⣿⡟   ⢀⣾⣿⣿⣦⣄⣠⣿⣿⣿⡆",
-        "⣿⣿⣿⠁   ⠘⠿⢿⣿⣿⣿⣿⣿⣿⣿⡇",
-        "⢻⣿⣿⣄⡀     ⠉⢻⣿⣿⣿⣿⣿⠃",
-        " ⢻⣿⣿⣿⣿⣶⣆⡀  ⢸⣿⣿⣿⣿⠃ ",
-        "  ⠙⢿⣿⣿⣿⣿⣿⣷⣿⣿⣿⣿⠟⠁  ",
-        "    ⠈⠙⠻⠿⠿⠿⠿⠛⠉     ",
-        "                  ",
-        "     CYNOSURE     ",
+        {{0x66b6ff,0,"   ⢀⣠⣴⣾"},{0x66b6ff,0xffffff,"⠿⠿⢿"},{0x66b6ff,0,"⣿⣶⣤⣀    "}},
+        {{0x66b6ff,0," ⢀⣴⣿⣿"},{0x66b6ff,0xffffff,"⠋     ⠉⠻⢿"},{0x66b6ff,0,"⣷⣄  "}},
+        {{0x66b6ff,0,"⢀⣾⣿⣿"},{0x66b6ff,0xffffff,"⠏        ⠈"},{0x66b6ff,0,"⣿⣿⣆ "}},
+        {{0x66b6ff,0,"⣾⣿⣿"},{0x66b6ff,0xffffff,"⡟   ⢀⣾⣿⣿⣦⣄⣠"},{0x66b6ff,0,"⣿⣿⣿⡆"}},
+        {{0x66b6ff,0,"⣿⣿⣿"},{0x66b6ff,0xffffff,"⠁   ⠘⠿⢿"},{0x66b6ff,0,"⣿⣿⣿⣿⣿⣿⣿⡇"}},
+        {{0x66b6ff,0,"⢻⣿⣿"},{0x66b6ff,0xffffff,"⣄⡀     ⠉⢻"},{0x66b6ff,0,"⣿⣿⣿⣿⣿⠃"}},
+        {{0x66b6ff,0," ⢻⣿⣿⣿⣿"},{0x66b6ff,0xffffff,"⣶⣆⡀  ⢸"},{0x66b6ff,0,"⣿⣿⣿⣿⠃ "}},
+        {{0x66b6ff,0,"  ⠙⢿⣿⣿⣿⣿⣿"},{0x66b6ff,0xffffff,"⣷"},{0x66b6ff,0,"⣿⣿⣿⣿⠟⠁  "}},
+        {{0x66b6ff,0,"    ⠈⠙⠻⠿⠿⠿⠿⠛⠉     "}},
+        {{0x66b6ff,0,"                  "}},
+        {{0xffffff,0,"     CYNOSURE     "}},
       }
 
-      lgpu.setBackground(0)
-      lgpu.setForeground(0x66B6FF)
       local w, h = lgpu.maxResolution()
-      local x, y = (w // 2) - (#splash[1] // 2) + 2, (h // 2) - (#splash // 2)
+      local x, y = (w // 2) - 10, (h // 2) - (#splash // 2)
       lgpu.setResolution(w, h)
       lgpu.fill(1, 1, w, h, " ")
       for i, line in ipairs(splash) do
-        lgpu.set(x, y + i - 1, line)
+        local xo = 0
+        for _, ent in ipairs(line) do
+          lgpu.setForeground(ent[1])
+          lgpu.setBackground(ent[2])
+          lgpu.set(x + xo, y + i - 1, ent[3])
+          xo = xo + utf8.len(ent[3])
+        end
       end
     else
       function k.log(level, ...)

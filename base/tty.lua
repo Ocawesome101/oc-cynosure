@@ -182,7 +182,8 @@ do
   -- echo.  for more control {ESC}?c may be desirable.
   function commands:m(args)
     args[1] = args[1] or 0
-    for i=1, #args, 1 do
+    local i = 1
+    while i <= #args do
       local n = args[i]
       if n == 0 then
         self.fg = colors[8]
@@ -212,7 +213,34 @@ do
       elseif n > 99 and n < 108 then
         self.bg = colors[n - 91]
         self.gpu.setBackground(self.bg)
+      elseif n == 38 then
+        i = i + 1
+        if not args[i] then return end
+        local mode = args[i]
+        if mode == 5 then -- 256-color mode
+          -- TODO
+        elseif mode == 2 then -- 24-bit color mode
+          local r, g, b = args[i + 1], args[i + 2], args[i + 3]
+          if not b then return end
+          i = i + 3
+          self.fg = (r << 16 + g << 8 + b)
+          self.gpu.setForeground(self.fg)
+        end
+      elseif n == 48 then
+        i = i + 1
+        if not args[i] then return end
+        local mode = args[i]
+        if mode == 5 then -- 256-color mode
+          -- TODO
+        elseif mode == 2 then -- 24-bit color mode
+          local r, g, b = args[i + 1], args[i + 2], args[i + 3]
+          if not b then return end
+          i = i + 3
+          self.bg = (r << 16 + g << 8 + b)
+          self.gpu.setBackground(self.bg)
+        end
       end
+      i = i + 1
     end
   end
 
