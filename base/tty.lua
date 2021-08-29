@@ -68,6 +68,7 @@ do
   end
 
   local function write(self, lines)
+    if self.attributes.xoff then return end
     while #lines > 0 do
       local next_nl = lines:find("\n")
 
