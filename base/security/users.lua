@@ -69,10 +69,10 @@ do
           k.security.acl.permissions.user.SUDO) then
         return nil, "permission denied: no permission"
       end
-    end
     
-    if not api.authenticate(uid, pass) then
-      return nil, "permission denied: bad login"
+      if not api.authenticate(uid, pass) then
+        return nil, "permission denied: bad login"
+      end
     end
     
     local new = {

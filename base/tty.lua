@@ -365,7 +365,7 @@ do
     if self.attributes.line and not k.cmdline.nottylinebuffer then
       self.wb = self.wb .. str
       if self.wb:find("\n") then
-        local ln = self.wb:match("(.-\n)")
+        local ln = self.wb:match("(.+\n)")
         self.wb = self.wb:sub(#ln + 1)
         return self:write_str(ln)
       elseif #self.wb > 2048 then
