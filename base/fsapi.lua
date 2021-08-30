@@ -51,6 +51,8 @@ do
     return table.concat(split(path), "/")
   end
 
+  fs.clean = clean
+
   local faux = {children = mounts}
   local resolving = {}
 

@@ -26,10 +26,19 @@ do
   }
 
   _G.io = {}
+
+  local function makePathCanonical(path)
+    if path:sub(1,1) ~= "/" then
+      path = k.fs.clean((os.getenv("PWD") or "/") .. "/" .. path)
+    end
+    return path
+  end
   
   function io.open(file, mode)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
+
+    file = makePathCanonical(file)
   
     mode = mode or "r"
 
@@ -90,7 +99,14 @@ do
 
   local function stream(kk)
     return function(v)
-      if v then checkArg(1, v, "FILE*") end
+      if v then checkArg(1, v, "FILE*", "string") end
+      if type(v) == "string" then
+        local hd, err = io.open(v, kk == "input" and "r" or "w")
+        if not err then
+          error("cannot open file '" .. v .. "' (" .. err .. ")")
+        end
+        v = hd
+      end
 
       if not k.scheduler.info() then
         return k.logio

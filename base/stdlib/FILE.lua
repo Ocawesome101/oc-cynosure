@@ -81,8 +81,12 @@ do
       if fmt == "l" or fmt == "L" then
         local line = self:read_line()
       
+        if #line == 0 then
+          return nil
+        end
+
         if fmt == "l" then
-          line = line:sub(1, -2)
+          line = line:gsub("\n", "")
         end
         
         return line

@@ -73,6 +73,7 @@ do
     [0] = function() end,
     [1] = function(self) self.status = "" self.dead = true end,
     [2] = function(self) self.status = "interrupted" self.dead = true end,
+    [3] = function(self) self.status = "" self.dead = true end,
     [9] = function(self) self.dead = true end,
     [18] = function(self) self.stopped = true end,
   }

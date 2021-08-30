@@ -17,6 +17,7 @@ do
   api.signals = {
     hangup = 1,
     interrupt = 2,
+    quit = 3,
     kill = 9,
     stop = 17,
     kbdstop = 18,

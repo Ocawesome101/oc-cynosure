@@ -57,12 +57,13 @@ do
     return nil, "invalid password"
   end
 
-  function api.exec_as(uid, pass, func, pname, wait)
+  function api.exec_as(uid, pass, func, pname, wait, stdio)
     checkArg(1, uid, "number")
     checkArg(2, pass, "string")
     checkArg(3, func, "function")
     checkArg(4, pname, "string", "nil")
     checkArg(5, wait, "boolean", "nil")
+    checkArg(6, stdio, "FILE*", "nil")
     
     if k.scheduler.info().owner ~= 0 then
       if not k.security.acl.user_has_permission(k.scheduler.info().owner,
@@ -79,6 +80,11 @@ do
       func = func,
       name = pname or tostring(func),
       owner = uid,
+      input = stdio,
+      output = stdio,
+      stdin = stdio,
+      stdout = stdio,
+      stderr = stdio,
       env = {
         USER = passwd[uid].name,
         UID = tostring(uid),
@@ -89,7 +95,7 @@ do
     
     local p = k.scheduler.spawn(new)
     
-    if not wait then return end
+    if not wait then return p.pid end
 
     -- this is the only spot in the ENTIRE kernel where process.await is used
     return k.userspace.package.loaded.process.await(p.pid)
