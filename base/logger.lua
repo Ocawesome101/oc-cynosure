@@ -30,19 +30,8 @@ do
       local lgpu = component.proxy(lgpu)
       function k.log() end
 
-      -- TODO custom bootsplash support
       local splash = {
-        {{0x66b6ff,0,"   ⢀⣠⣴⣾"},{0x66b6ff,0xffffff,"⠿⠿⢿"},{0x66b6ff,0,"⣿⣶⣤⣀    "}},
-        {{0x66b6ff,0," ⢀⣴⣿⣿"},{0x66b6ff,0xffffff,"⠋     ⠉⠻⢿"},{0x66b6ff,0,"⣷⣄  "}},
-        {{0x66b6ff,0,"⢀⣾⣿⣿"},{0x66b6ff,0xffffff,"⠏        ⠈"},{0x66b6ff,0,"⣿⣿⣆ "}},
-        {{0x66b6ff,0,"⣾⣿⣿"},{0x66b6ff,0xffffff,"⡟   ⢀⣾⣿⣿⣦⣄⣠"},{0x66b6ff,0,"⣿⣿⣿⡆"}},
-        {{0x66b6ff,0,"⣿⣿⣿"},{0x66b6ff,0xffffff,"⠁   ⠘⠿⢿"},{0x66b6ff,0,"⣿⣿⣿⣿⣿⣿⣿⡇"}},
-        {{0x66b6ff,0,"⢻⣿⣿"},{0x66b6ff,0xffffff,"⣄⡀     ⠉⢻"},{0x66b6ff,0,"⣿⣿⣿⣿⣿⠃"}},
-        {{0x66b6ff,0," ⢻⣿⣿⣿⣿"},{0x66b6ff,0xffffff,"⣶⣆⡀  ⢸"},{0x66b6ff,0,"⣿⣿⣿⣿⠃ "}},
-        {{0x66b6ff,0,"  ⠙⢿⣿⣿⣿⣿⣿"},{0x66b6ff,0xffffff,"⣷"},{0x66b6ff,0,"⣿⣿⣿⣿⠟⠁  "}},
-        {{0x66b6ff,0,"    ⠈⠙⠻⠿⠿⠿⠿⠛⠉     "}},
-        {{0x66b6ff,0,"                  "}},
-        {{0xffffff,0,"     CYNOSURE     "}},
+        --#include "@[{(os.getenv('BOOTSPLASH') or 'base/bootsplash') .. '.lua'}]"
       }
 
       local w, h = lgpu.maxResolution()
