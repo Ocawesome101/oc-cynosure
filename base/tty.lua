@@ -551,12 +551,12 @@ do
         local mxp = 0
 
         for _k, v in pairs(k.scheduler.processes) do
-          --k.log(k.loglevels.error, _k, v.name)
-          if v.io.stderr.tty == self.ttyn then
+          --k.log(k.loglevels.error, _k, v.name, v.io.stderr.tty, self.ttyn)
+          if v.io.stderr.tty == self.tty then
             mxp = math.max(mxp, _k)
-          elseif v.io.stdin.tty == self.ttyn then
+          elseif v.io.stdin.tty == self.tty then
             mxp = math.max(mxp, _k)
-          elseif v.io.stdout.tty == self.ttyn then
+          elseif v.io.stdout.tty == self.tty then
             mxp = math.max(mxp, _k)
           end
         end
@@ -564,7 +564,7 @@ do
         --k.log(k.loglevels.error, "sending", sigacts[tch], "to", mxp == 0 and mxp or k.scheduler.processes[mxp].name)
 
         if mxp > 0 then
-          k.scheduler.processes[mxp]:signal(sigacts[tch])
+          k.scheduler.kill(mxp, sigacts[tch])
         end
 
         self.rb = ""

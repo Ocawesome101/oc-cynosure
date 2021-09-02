@@ -19,6 +19,7 @@ do
     interrupt = 2,
     quit = 3,
     kill = 9,
+    pipe = 13,
     stop = 17,
     kbdstop = 18,
     continue = 19
@@ -190,7 +191,7 @@ do
             going_to_run[v.resume_next.pid] = true
           end
         elseif v.dead then
-          handleDeath(v, v.exit_code or 1, v.status or "Killed")
+          handleDeath(v, v.exit_code or 1, v.status or "killed")
         end
       end
 

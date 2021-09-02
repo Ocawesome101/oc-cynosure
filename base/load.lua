@@ -7,10 +7,9 @@ if (not k.cmdline.no_force_yields) then
     --[[
     { "if([ %(])(.-)([ %)])then([ \n])", "if%1%2%3then%4__internal_yield() " },
     { "elseif([ %(])(.-)([ %)])then([ \n])", "elseif%1%2%3then%4__internal_yield() " },
-    { "([ \n])else([ \n])", "%1else%2__internal_yield() " },]]
-    { "while([ %(])(.-)([ %)])do([ \n])", "while%1%2%3do%4__internal_yield() "},
-    { "for([ %(])(.-)([ %)])do([ \n])", "for%1%2%3do%4__internal_yield() " },
-    { "repeat([ \n])", "repeat%1__internal_yield() " },
+    { "([ \n])else([ \n])", "%1else%2__internal_yield() " },--]]
+    { "([%);\n ])do([ \n%(])", "%1do%2__internal_yield() "},
+    { "([%);\n ])repeat([ \n%(])", "%1repeat%2__internal_yield() " },
   }
 
   local old_load = load
