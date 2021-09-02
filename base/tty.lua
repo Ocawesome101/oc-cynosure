@@ -229,7 +229,7 @@ do
           local r, g, b = args[i + 1], args[i + 2], args[i + 3]
           if not b then return end
           i = i + 3
-          self.fg = (r << 16 + g << 8 + b)
+          self.fg = (r << 16) + (g << 8) + b
           self.gpu.setForeground(self.fg)
         end
       elseif n == 48 then
@@ -242,7 +242,7 @@ do
           local r, g, b = args[i + 1], args[i + 2], args[i + 3]
           if not b then return end
           i = i + 3
-          self.bg = (r << 16 + g << 8 + b)
+          self.bg = (r << 16) + (g << 8) + b
           self.gpu.setBackground(self.bg)
         end
       end
