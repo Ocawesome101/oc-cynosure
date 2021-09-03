@@ -15,7 +15,7 @@ do
     [0] = {
       name = "root",
       home = "/root",
-      shell = "/bin/lsh",
+      shell = "/bin/sh",
       acls = 8191,
       pass = k.util.to_hex(k.sha3.sha256("root")),
     }

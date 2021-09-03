@@ -6,7 +6,9 @@ do
   local globalenv = {
     UID = 0,
     USER = "root",
-    TERM = "cynosure"
+    TERM = "cynosure",
+    PWD = "/",
+    HOSTNAME = "localhost"
   }
 
   local processes = {}

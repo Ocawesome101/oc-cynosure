@@ -243,8 +243,11 @@ do
       return nil, fs.errors.file_not_found
     end
     
+    local handle, err = self.node.open(file, mode or "r")
+    if not handle then return nil, err or "failed opening file" end
+
     local fd = {
-      fd = self.node.open(file, mode or "r"),
+      fd = handle,
       node = self.node,
       read = fread,
       write = fwrite,
