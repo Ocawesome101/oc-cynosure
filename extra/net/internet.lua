@@ -23,11 +23,12 @@ do
     if not self.base then
       return nil, "_base_stream is closed"
     end
-    local data = ""
+    local data, iter = "", 0
     repeat
       local chunk = self.base.read(n - #data)
       data = data .. (chunk or "")
-    until (not chunk) or #data == n
+      if chunk and #chunk == 0 then iter = iter + 1 os.sleep(0) end
+    until (not chunk) or #data == n or iter > 10
     if #data == 0 then return nil end
     return data
   end

@@ -122,6 +122,10 @@ do
     return processes[pid]
   end
 
+  local function closeFile(file)
+    if file.close and not file.tty then pcall(file.close, file) end
+  end
+
   local function handleDeath(proc, exit, err, ok)
     local exit = err or 0
     err = err or ok
@@ -153,6 +157,7 @@ do
     for k, v in pairs(proc.handles) do
       pcall(v.close, v)
     end
+    for k,v in pairs(proc.io) do closeFile(v) end
 
     local ppt = "/proc/" .. math.floor(proc.pid)
     k.sysfs.unregister(ppt)

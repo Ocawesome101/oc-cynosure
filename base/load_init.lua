@@ -120,8 +120,8 @@ do
   
   local sbox = k.util.copy_table(_G)
   setmetatable(sbox, {})
-  setmetatable(string, {})
-  sbux.struct = nil
+  setmetatable(sbox.string, {})
+  sbox.struct = nil
   
   k.userspace = sbox
   sbox._G = sbox

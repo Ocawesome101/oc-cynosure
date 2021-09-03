@@ -6,7 +6,7 @@ do
   local buffer = {}
  
   function buffer:read_byte()
-    if self.buffer_mode ~= "none" then
+    if self.buffer_mode ~= "none" and self.buffer_mode ~= "pipe" then
       if (not self.read_buffer) or #self.read_buffer == 0 then
         self.read_buffer = self.base:read(self.buffer_size)
       end
@@ -207,6 +207,7 @@ do
 
   function buffer:close()
     self:flush()
+    self.base:close()
     self.closed = true
   end
 

@@ -135,11 +135,11 @@ do
         return nil
       end
       if not self.closed then
-        while #self.rb < n do
+        while (not self.closed) and #self.rb < n do
           if self.from ~= 0 then
             k.scheduler.info().data.self.resume_next = self.from
           end
-          coroutine.yield()
+          coroutine.yield(1)
         end
       end
       local data = self.rb:sub(1, n)
