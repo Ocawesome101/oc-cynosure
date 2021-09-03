@@ -1,4 +1,4 @@
 KMODS=extra/net/base,extra/ustty,extra/sound
-KRELEASE=1.69
+KRELEASE=1.71
 KCUSTOMNAME=nice
 BOOTSPLASH=$BOOTSPLASH||base/bootsplash
