@@ -119,6 +119,9 @@ do
   k.log(k.loglevels.info, "Creating userspace sandbox")
   
   local sbox = k.util.copy_table(_G)
+  setmetatable(sbox, {})
+  setmetatable(string, {})
+  sbux.struct = nil
   
   k.userspace = sbox
   sbox._G = sbox
