@@ -171,7 +171,7 @@ do
         to = 0, -- the process reading input
         rb = "",
       }, {__index = _pipe}), "rw")
-      new.buffer_mode = "none"
+      new.buffer_mode = "pipe"
       return new
     end
 

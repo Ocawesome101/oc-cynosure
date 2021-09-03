@@ -120,7 +120,11 @@ do
   end
 
   function buffer:read(...)
-    if self.closed or not self.mode.r then
+    if self.buffer_mode == "pipe" then
+      if self.closed and #self.base.rb == 0 then
+        return nil, "bad file descriptor"
+      end
+    elseif self.closed or not self.mode.r then
       return nil, "bad file descriptor"
     end
     
