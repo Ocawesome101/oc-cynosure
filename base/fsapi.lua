@@ -360,7 +360,7 @@ do
           ((mode == "w" or mode == "a") and not
           k.security.acl.has_permission(data.permissions, wperm))) and not
           k.security.acl.user_has_permission(user,
-          k.security.acl.permissions.OPEN_UNOWNED) then
+          k.security.acl.permissions.user.OPEN_UNOWNED) then
         return nil, "permission denied"
       end
     end

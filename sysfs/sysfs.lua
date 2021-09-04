@@ -32,6 +32,13 @@ do
           return io.stderr
         end
       },
+      null = {
+        dir = false,
+        read = function(_, n)
+          return nil
+        end,
+        write = function() return true end
+      }
     },
     mounts = {
       dir = false,
