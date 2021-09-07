@@ -266,8 +266,15 @@ do
     k.userspace.package.loaded.process = p
     
     function p.spawn(args)
-      checkArg(1, args.name, "string")
-      checkArg(2, args.func, "function")
+      checkArg(1, args, "table")
+      checkArg("name", args.name, "string")
+      checkArg("func", args.func, "function")
+      checkArg("env", args.env, "table", "nil")
+      checkArg("stdin", args.stdin, "FILE*", "nil")
+      checkArg("stdout", args.stdout, "FILE*", "nil")
+      checkArg("stderr", args.stderr, "FILE*", "nil")
+      checkArg("input", args.input, "FILE*", "nil")
+      checkArg("output", args.output, "FILE*", "nil")
     
       local sanitized = {
         func = args.func,
@@ -277,6 +284,7 @@ do
         input = args.input,
         output = args.output,
         stderr = args.stderr,
+        env = args.env
       }
       
       local new = api.spawn(sanitized)

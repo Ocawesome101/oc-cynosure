@@ -62,7 +62,7 @@ do
     return true
   end
 
-  -- copied from machine.lua
+  -- copied from machine.lua, with modifications
   function _G.checkArg(n, have, ...)
     have = type(have)
     
@@ -74,10 +74,14 @@ do
       end
     end
     
+    if type(n) == "number" then n = string.format("#%d", n)
+    else n = "'"..tostring(n).."'" end
     if not check(...) then
-      local msg = string.format("bad argument #%d (%s expected, got %s)",
-                                n, table.concat(table.pack(...), " or "), have)
-      error(msg, 3)
+      local name = debug.getinfo(3, 'n').name
+      local msg = string.format("bad argument %s to '%s' (%s expected, got %s)",
+                                n, name, table.concat(table.pack(...), " or "),
+                                have)
+      error(msg, 2)
     end
   end
 end
