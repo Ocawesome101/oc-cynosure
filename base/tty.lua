@@ -74,6 +74,42 @@ do
       0x8f3f71,
       0x427b58,
       0x3c3836
+    },
+    { -- PaperColor light
+      0xeeeeee,
+      0xaf0000,
+      0x008700,
+      0x5f8700,
+      0x0087af,
+      0x878787,
+      0x005f87,
+      0x444444,
+      0xbcbcbc,
+      0xd70000,
+      0xd70087,
+      0x8700af,
+      0xd75f00,
+      0xd75f00,
+      0x005faf,
+      0x005f87
+    },
+    { -- Pale Night
+      0x292d3e,
+      0xf07178,
+      0xc3e88d,
+      0xffcb6b,
+      0x82aaff,
+      0xc792ea,
+      0x89ddff,
+      0xd0d0d0,
+      0x434758,
+      0xff8b92,
+      0xddffa7,
+      0xffe585,
+      0x9cc4ff,
+      0xe1acff,
+      0xa3f7ff,
+      0xffffff,
     }
   }
   local colors = color_profiles[1]
@@ -83,6 +119,14 @@ do
   end
 
   if type(k.cmdline["tty.colors"]) == "string" then
+    for color in k.cmdline["tty.colors"]:gmatch("[^,]+") do
+      local idx, col = color:match("(%x):(%x%x%x%x%x%x)")
+      if idx and col then
+        idx = tonumber(idx, 16) + 1
+        col = tonumber(col, 16)
+        colors[idx] = col or colors[idx]
+      end
+    end
   end
   
   local len = unicode.len
