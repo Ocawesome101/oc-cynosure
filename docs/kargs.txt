@@ -30,3 +30,6 @@ The following kernel arguments are supported by the Cynosure kernel.
 
   no_wrap_coroutine
     Do not wrap the version of the coroutine API presented to userspace.  There should be little reason to use this option, since Cynosure's wrapper only adds features.  Only use for testing if you think this wrapper breaks something related to coroutines.
+
+  tty.profile=NUMBER
+    Set the TTY color profile to that matching NUMBER.  If a matching profile is not found, defaults to the first one (the old color scheme).
