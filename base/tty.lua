@@ -1,25 +1,90 @@
 -- object-based tty streams --
 
 do
-  local colors = {
-    0x000000,
-    0xaa0000,
-    0x00aa00,
-    0xaa5500,
-    0x0000aa,
-    0xaa00aa,
-    0x00aaaa,
-    0xaaaaaa,
-    0x555555,
-    0xff5555,
-    0x55ff55,
-    0xffff55,
-    0x5555ff,
-    0xff55ff,
-    0x55ffff,
-    0xffffff
+  local color_profiles = {
+    { -- default VGA colors
+      0x000000,
+      0xaa0000,
+      0x00aa00,
+      0xaa5500,
+      0x0000aa,
+      0xaa00aa,
+      0x00aaaa,
+      0xaaaaaa,
+      0x555555,
+      0xff5555,
+      0x55ff55,
+      0xffff55,
+      0x5555ff,
+      0xff55ff,
+      0x55ffff,
+      0xffffff
+    },
+    { -- Breeze theme colors from Konsole
+      0x232627,
+      0xed1515,
+      0x11d116,
+      0xf67400,
+      0x1d99f3,
+      0x9b59b6,
+      0x1abc9c,
+      0xfcfcfc,
+      -- intense variants
+      0x7f8c8d,
+      0xc0392b,
+      0x1cdc9a,
+      0xfdbc4b,
+      0x3daee9,
+      0x8e44ad,
+      0x16a085,
+      0xffffff
+    },
+    { -- Gruvbox
+      0x282828,
+      0xcc241d,
+      0x98971a,
+      0xd79921,
+      0x458588,
+      0xb16286,
+      0x689d6a,
+      0xa89984,
+      0x928374,
+      0xfb4934,
+      0xb8bb26,
+      0xfabd2f,
+      0x83a598,
+      0xd3869b,
+      0x8ec07c,
+      0xebdbb2
+    },
+    { -- Gruvbox light, for those crazy enough to want a light theme
+      0xfbf1c7,
+      0xcc241d,
+      0x98971a,
+      0xd79921,
+      0x458588,
+      0xb16286,
+      0x689d6a,
+      0x7c6f64,
+      0x928374,
+      0x9d0006,
+      0x79740e,
+      0xb57614,
+      0x076678,
+      0x8f3f71,
+      0x427b58,
+      0x3c3836
+    }
   }
+  local colors = color_profiles[1]
 
+  if type(k.cmdline["tty.profile"]) == "number" then
+    colors = color_profiles[k.cmdline["tty.profile"]] or color_profiles[1]
+  end
+
+  if type(k.cmdline["tty.colors"]) == "string" then
+  end
+  
   local len = unicode.len
   local sub = unicode.sub
 
@@ -192,33 +257,41 @@ do
     while i <= #args do
       local n = args[i]
       if n == 0 then
-        self.fg = colors[8]
-        self.bg = colors[1]
-        self.gpu.setForeground(self.fg)
-        self.gpu.setBackground(self.bg)
+        self.fg = 7
+        self.bg = 0
+        self.fgp = true
+        self.bgp = true
+        self.gpu.setForeground(self.fg, true)
+        self.gpu.setBackground(self.bg, true)
         self.attributes.echo = true
       elseif n == 8 then
         self.attributes.echo = false
       elseif n == 28 then
         self.attributes.echo = true
       elseif n > 29 and n < 38 then
-        self.fg = colors[n - 29]
-        self.gpu.setForeground(self.fg)
+        self.fg = n - 30
+        self.fgp = true
+        self.gpu.setForeground(self.fg, true)
       elseif n == 39 then
-        self.fg = colors[8]
-        self.gpu.setForeground(self.fg)
+        self.fg = 7
+        self.fgp = true
+        self.gpu.setForeground(self.fg, true)
       elseif n > 39 and n < 48 then
-        self.bg = colors[n - 39]
-        self.gpu.setBackground(self.bg)
+        self.bg = n - 40
+        self.bgp = true
+        self.gpu.setBackground(self.bg, true)
       elseif n == 49 then
-        self.bg = colors[1]
-        self.gpu.setBackground(self.bg)
+        self.bg = 0
+        self.bgp = true
+        self.gpu.setBackground(self.bg, true)
       elseif n > 89 and n < 98 then
-        self.fg = colors[n - 81]
-        self.gpu.setForeground(self.fg)
+        self.fg = n - 82
+        self.fgp = true
+        self.gpu.setForeground(self.fg, true)
       elseif n > 99 and n < 108 then
-        self.bg = colors[n - 91]
-        self.gpu.setBackground(self.bg)
+        self.bg = n - 92
+        self.bgp = true
+        self.gpu.setBackground(self.bg, true)
       elseif n == 38 then
         i = i + 1
         if not args[i] then return end
@@ -230,6 +303,7 @@ do
           if not b then return end
           i = i + 3
           self.fg = (r << 16) + (g << 8) + b
+          self.fgp = false
           self.gpu.setForeground(self.fg)
         end
       elseif n == 48 then
@@ -243,6 +317,7 @@ do
           if not b then return end
           i = i + 3
           self.bg = (r << 16) + (g << 8) + b
+          self.bgp = false
           self.gpu.setBackground(self.bg)
         end
       end
@@ -394,12 +469,17 @@ do
     -- TODO: cursor logic is a bit brute-force currently, there are certain
     -- TODO: scenarios where cursor manipulation is unnecessary
     if self.attributes.cursor then
-      local c, f, b = gpu.get(self.cx, self.cy)
-      gpu.setForeground(b)
-      gpu.setBackground(f)
+      local c, f, b, pf, pb = gpu.get(self.cx, self.cy)
+      if pf then
+        gpu.setForeground(pb, true)
+        gpu.setBackground(pf, true)
+      else
+        gpu.setForeground(b)
+        gpu.setBackground(f)
+      end
       gpu.set(self.cx, self.cy, c)
-      gpu.setForeground(self.fg)
-      gpu.setBackground(self.bg)
+      gpu.setForeground(self.fg, self.fgp)
+      gpu.setBackground(self.bg, self.bgp)
     end
     
     -- lazily convert tabs
@@ -468,13 +548,20 @@ do
     end
 
     if self.attributes.cursor then
-      c, f, b = gpu.get(self.cx, self.cy)
+      c, f, b, pf, pb = gpu.get(self.cx, self.cy)
     
-      gpu.setForeground(b)
-      gpu.setBackground(f)
+      if pf then
+        gpu.setForeground(pb, true)
+        gpu.setBackground(pf, true)
+      else
+        gpu.setForeground(b)
+        gpu.setBackground(f)
+      end
       gpu.set(self.cx, self.cy, c)
-      gpu.setForeground(self.fg)
-      gpu.setBackground(self.bg)
+      if pf then
+        gpu.setForeground(self.fg, self.fgp)
+        gpu.setBackground(self.bg, self.bgp)
+      end
     end
     
     return true
@@ -670,14 +757,19 @@ do
       proxy = gpu
     end
 
-    proxy.setForeground(colors[8])
-    proxy.setBackground(colors[1])
+    -- set the gpu's palette
+    for i=1, #colors, 1 do
+      proxy.setPaletteColor(i - 1, colors[i])
+    end
+
+    proxy.setForeground(7, true)
+    proxy.setBackground(0, true)
 
     proxy.setDepth(proxy.maxDepth())
     -- optimizations for no color on T1
     if proxy.getDepth() == 1 then
       local fg, bg = proxy.setForeground, proxy.setBackground
-      local f, b = colors[1], colors[8]
+      local f, b = 7, 0
       function proxy.setForeground(c)
         -- [[
         if c >= 0xAAAAAA or c <= 0x000000 and f ~= c then
@@ -709,8 +801,10 @@ do
       esc = "", -- the escape sequence buffer
       cx = 1, -- the cursor's X position
       cy = 1, -- the cursor's Y position
-      fg = colors[8], -- the current foreground color
-      bg = colors[1], -- the current background color
+      fg = 7, -- the current foreground color
+      bg = 0, -- the current background color
+      fgp = true, -- whether the foreground color is a palette index
+      bgp = true, -- whether the background color is a palette index
       rb = "", -- a buffer of characters read from the input
       wb = "", -- line buffering at its finest
     }, {__index = _stream})

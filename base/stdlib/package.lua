@@ -76,18 +76,44 @@ do
   end
 
   -- let's define this here because WHY NOT
+  -- now with shebang support!
+  local shebang_pattern = "^#!(/.-)\n"
+  local ldf_loading = {}
   function _G.loadfile(file, mode, env)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
     checkArg(3, env, "table", "nil")
+
+    if ldf_loading[file] then
+      return nil, "file is already loading, likely due to a shebang error"
+    end
     
     local handle, err = io.open(file, "r")
     if not handle then
       return nil, err
     end
+
+    ldf_loading[file] = true
     
     local data = handle:read("a")
     handle:close()
+
+    local shebang = data:match(shebang_pattern) 
+    if shebang then
+      if not shebang:match("lua") then
+        if k.fsapi.stat(shebang .. ".lua") then shebang = shebang .. ".lua" end
+        local ok, err = loadfile(shebang)
+        ldf_loading[file] = false
+        if not ok and err then
+          return nil, "error loading interpreter: " .. err
+        end
+        return function(...) return ok(file, ...) end
+      else
+        data = data:gsub(shebang_pattern, "")
+      end
+    end
+
+    ldf_loading[file] = false
 
     return load(data, "="..file, "bt", env or k.userspace or _G)
   end
