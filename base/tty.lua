@@ -539,7 +539,7 @@ do
         local esc_end = str:find("[a-zA-Z]")
 
         if not esc_end then
-          self.esc = string.format("%s%s", self.esc, str)
+          self.esc = self.esc .. str
         else
           self.in_esc = false
 
