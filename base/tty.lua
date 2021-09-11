@@ -546,7 +546,7 @@ do
           local finish
           str, finish = pop(str, esc_end, true)
 
-          local esc = string.format("%s%s", self.esc, finish)
+          local esc = self.esc .. finish
           self.esc = ""
 
           local separator, raw_args, code = esc:match(
@@ -726,7 +726,7 @@ do
     end
     
     if not self.attributes.xoff then
-      self.rb = string.format("%s%s", self.rb, char)
+      self.rb = self.rb .. char
     end
   end
 
