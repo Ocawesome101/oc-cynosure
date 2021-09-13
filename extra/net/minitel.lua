@@ -288,42 +288,7 @@ do
   function proto.sethostname(hn)
     hostname = hn
   end
-
-  function proto.listen(url, handler, unregisterOnSuccess)
-    local hn, port = url:match("(.+):(%d+)")
-    if hn ~= "localhost" or not (hn and port) then
-      return nil, "bad URL: expected 'localhost:port'"
-    end
-
-    if handler then
-      local id = 0
-
-      local function listener(_, from, rport, data, data2)
-        if rport == port and data == "openstream" then
-          local nport = math.random(32768, 65535)
-          local sclose = genPacketID()
-          mtapi.rsend(from, rport, tostring(nport))
-          mtapi.rsend(from, nport, sclose)
-          if unregisterOnSuccess then k.event.unregister(id) end
-          handler(socket(from, nport, sclose), data2)
-        end
-      end
-
-      id = k.event.register("net_msg", listener)
-      return true
-    else
-      local _, from, rport, data
-      repeat
-        _, from, rport, data = coroutine.yield()
-      until _ == "net_msg"
-      local nport = math.random(32768, 65535)
-      local sclose = genPacketID()
-      mtapi.rsend(from, rport, tostring(nport))
-      mtapi.rsend(from, nport, sclose)
-      return socket(from, nport, sclose)
-    end
-  end
-
+  
   -- extension: 'file' argument passed to 'openstream'
   local function open_socket(to, port, file)
     if not mtapi.rsend(to, port, "openstream", file) then
@@ -362,23 +327,59 @@ do
     return socket(to, data, sclose)
   end
 
+
+  function proto:listen(url, handler, unregisterOnSuccess)
+    local hn, port = url:match("(.-):(%d+)")
+    if hn ~= "localhost" or not (hn and port) then
+      return nil, "bad URL: expected 'localhost:port'"
+    end
+
+    if handler then
+      local id = 0
+
+      local function listener(_, from, rport, data, data2)
+        if rport == port and data == "openstream" then
+          local nport = math.random(32768, 65535)
+          local sclose = genPacketID()
+          mtapi.rsend(from, rport, tostring(nport))
+          mtapi.rsend(from, nport, sclose)
+          if unregisterOnSuccess then k.event.unregister(id) end
+          handler(socket(from, nport, sclose), data2)
+        end
+      end
+
+      id = k.event.register("net_msg", listener)
+      return true
+    else
+      local _, from, rport, data
+      repeat
+        _, from, rport, data = coroutine.yield()
+      until _ == "net_msg"
+      local nport = math.random(32768, 65535)
+      local sclose = genPacketID()
+      mtapi.rsend(from, rport, tostring(nport))
+      mtapi.rsend(from, nport, sclose)
+      return socket(from, nport, sclose)
+    end
+  end
+
   -- url format:
   -- hostname:port
-  function proto.socket(url)
-    local to, port = url:match("^(.+):(%d+)")
+  function proto:socket(url)
+    local to, port = url:match("^(.-):(%d+)")
     if not (to and port) then
-      return nil, "bad URL: expected 'hostname:port'"
+      return nil, "bad URL: expected 'hostname:port', got " .. url
     end
-    return mtapi.open(to, tonumber(port))
+    return open_socket(to, tonumber(port))
   end
 
   -- hostname:port/path/to/file
-  function proto.request(url)
-    local to, port, file = url:match("^(.+):(%d+)/(.+)")
+  function proto:request(url)
+    local to, port, file = url:match("^(.-):(%d+)/(.+)")
     if not (to and port and file) then
       return nil, "bad URL: expected 'hostname:port/file'"
     end
-    return mtapi.open(to, tonumber(port), file)
+    return open_socket(to, tonumber(port), file)
   end
 
   protocols.mt = proto

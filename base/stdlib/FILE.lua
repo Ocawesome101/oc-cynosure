@@ -238,4 +238,10 @@ do
     setmetatable(new, fmt)
     return new
   end
+
+  k.hooks.add("sandbox", function()
+    k.userspace.package.loaded.fstream = {
+      create = k.create_fstream
+    }
+  end)
 end
