@@ -10,6 +10,7 @@ do
         v.callback(table.unpack(sig))
       end
     end
+    if sig ~= "*" then event.handle("*") end
   end
 
   local n = 0
