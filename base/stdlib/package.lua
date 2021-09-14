@@ -79,6 +79,21 @@ do
   -- now with shebang support!
   local shebang_pattern = "^#!(/.-)\n"
   local ldf_loading = {}
+  local ldf_cache = {}
+  local ldf_mem_thresh = tonumber(k.cmdline["loadcache.gc_threshold"]) or 4096
+  local ldf_max_age = tonumber(k.cmdline["loadcache.max_age"]) or 60
+
+  k.event.register("*", function()
+    for k, v in pairs(ldf_cache) do
+      if ldf.time < computer.uptime() - ldf_max_age then
+        ldf_cache[k] = nil
+      end
+    end
+    if computer.freeMemory() <= ldf_mem_thresh then
+      ldf_cache = {}
+    end
+  end)
+
   function _G.loadfile(file, mode, env)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
@@ -86,6 +101,18 @@ do
 
     if ldf_loading[file] then
       return nil, "file is already loading, likely due to a shebang error"
+    end
+
+    file = k.fs.clean(file)
+
+    local fstat, err = k.fs.api.stat(file)
+    if not fstat then
+      return nil, err
+    end
+
+    if ldf_cache[file]and fstat.lastModified<=ldf_cache[file].lastModified then
+      ldf_cache[file].time = computer.uptime()
+      return ldf_cache[file].func
     end
     
     local handle, err = io.open(file, "r")
@@ -115,7 +142,15 @@ do
 
     ldf_loading[file] = false
 
-    return load(data, "="..file, "bt", env or k.userspace or _G)
+    local ok, err = load(data, "="..file, "bt", env or k.userspace or _G)
+    if ok then
+      ldf_cache[file] = {
+        func = ok,
+        time = computer.uptime(),
+        lastModified = fstat.lastModified
+      }
+    end
+    return ok, err
   end
 
   function _G.dofile(file)
@@ -145,7 +180,7 @@ do
       return function(...)
         if not acl.user_has_permission(k.scheduler.info().owner,
             p) then
-          error("permission denied")
+          error("permission denied", 0)
         end
     
         return f(...)

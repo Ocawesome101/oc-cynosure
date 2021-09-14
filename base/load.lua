@@ -101,8 +101,8 @@ if (not k.cmdline.no_force_yields) then
       local old_iyield = env.__internal_yield
       local old_cyield = env.coroutine.yield
       
-      env.__internal_yield = function()
-        if computer.uptime() - last_yield >= max_time then
+      env.__internal_yield = function(tto)
+        if computer.uptime() - last_yield >= (tto or max_time) then
           last_yield = computer.uptime()
           local msg = table.pack(old_cyield(0.05))
           if msg.n > 0 then ysq[#ysq+1] = msg end

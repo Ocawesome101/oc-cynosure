@@ -16,7 +16,7 @@ do
           return proxy.getLabel() or "unlabeled"
         end,
         function(_, s)
-          proxy.setLabel(s)
+          proxy.setLabel(s:match("^(.-)\n"))
         end
       ),
       spaceUsed = util.fnmkfile(

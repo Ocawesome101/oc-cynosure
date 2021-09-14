@@ -7,11 +7,14 @@ do
 
   function os.setenv(K, v)
     local info = k.scheduler.info()
+    if not info then return end
     info.data.env[K] = v
   end
 
   function os.getenv(K)
     local info = k.scheduler.info()
+
+    if not info then return end
     
     if not K then
       return info.data.env

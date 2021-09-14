@@ -6,6 +6,7 @@ do
   local buffer = {}
  
   function buffer:read_byte()
+    if __internal_yield then __internal_yield(1) end
     if self.buffer_mode ~= "none" and self.buffer_mode ~= "pipe" then
       if (not self.read_buffer) or #self.read_buffer == 0 then
         self.read_buffer = self.base:read(self.buffer_size)
