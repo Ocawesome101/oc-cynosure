@@ -167,7 +167,7 @@ do
       args[i] = tostring(args[i])
     end
     
-    return (io.stdout or k.logio):write(
+    return (io.stdout or io.output()):write(
       table.concat(args, "  ", 1, args.n), "\n")
   end
 end

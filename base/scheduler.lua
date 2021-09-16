@@ -98,7 +98,7 @@ do
     checkArg(1, proc, "number", "nil")
     checkArg(2, signal, "number")
     
-    proc = proc or current.pid
+    proc = proc or (processes[current] or {}).pid
     
     if not processes[proc] then
       return nil, "no such process"
@@ -123,7 +123,8 @@ do
   end
 
   local function closeFile(file)
-    if file.close and not file.tty then pcall(file.close, file) end
+    if file.close and file.buffer_mode ~= "pipe" and not file.tty then
+      pcall(file.close, file) end
   end
 
   local function handleDeath(proc, exit, err, ok)
@@ -134,7 +135,7 @@ do
       exit = 127
     else
       exit = err or 0
-      err = "exited"
+      err = proc.pstatus or "exited"
     end
 
     err = err or "died"
@@ -218,6 +219,7 @@ do
         local aok, ok, err = proc:resume(table.unpack(psig))
 
         if proc.dead or ok == "__internal_process_exit" or not aok then
+          if ok == "__internal_process_exit" then proc.pstatus = "exited" end
           handleDeath(proc, exit, err, ok)
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time

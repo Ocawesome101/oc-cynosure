@@ -27,7 +27,7 @@ do
   end
 
   function buffer:write_byte(byte)
-    if self.buffer_mode ~= "none" then
+    if self.buffer_mode ~= "none" and self.buffer_mode ~= "pipe" then
       if #self.write_buffer >= self.buffer_size then
         self.base:write(self.write_buffer)
         self.write_buffer = ""
@@ -149,7 +149,7 @@ do
   end
 
   function buffer:write(...)
-    if self.closed then
+    if self.closed and self.buffer_mode ~= "pipe" then
       return nil, "bad file descriptor"
     end
     

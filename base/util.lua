@@ -149,7 +149,7 @@ do
 
     function _pipe:write(dat)
       if self.closed then
-        k.scheduler.signal(nil, k.scheduler.signals.pipe)
+        k.scheduler.kill(nil, k.scheduler.signals.pipe)
         return nil, "broken pipe"
       end
       self.rb = self.rb .. dat
