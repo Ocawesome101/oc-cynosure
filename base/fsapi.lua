@@ -48,7 +48,7 @@ do
 
   -- "clean" a path
   local function clean(path)
-    return table.concat(split(path), "/")
+    return "/" .. table.concat(split(path), "/")
   end
 
   fs.clean = clean
