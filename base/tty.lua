@@ -380,7 +380,7 @@ do
   function commands:S(args)
     local n = args[1] or 1
     self.gpu.copy(1, n, self.w, self.h, 0, -n)
-    self.gpu.fill(1, self.h - o, self.w, n, " ")
+    self.gpu.fill(1, self.h - n, self.w, n, " ")
   end
 
   function commands:T(args)
