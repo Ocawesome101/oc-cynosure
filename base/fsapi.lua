@@ -48,10 +48,10 @@ do
 
   -- "clean" a path
   local function clean(path)
-    return "/" .. table.concat(split(path), "/")
+    return table.concat(split(path), "/")
   end
 
-  fs.clean = clean
+  fs.clean = function(p) return "/" .. clean(p) end
 
   local faux = {children = mounts}
   local resolving = {}

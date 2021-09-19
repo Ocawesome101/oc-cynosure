@@ -110,7 +110,7 @@ do
       return nil, err
     end
 
-    if ldf_cache[file]and fstat.lastModified<=ldf_cache[file].lastModified then
+    if ldf_cache[file] and fstat.lastModified<=ldf_cache[file].lastModified then
       ldf_cache[file].time = computer.uptime()
       return ldf_cache[file].func
     end
