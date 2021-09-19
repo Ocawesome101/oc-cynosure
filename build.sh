@@ -4,6 +4,8 @@ source .buildconfig
 export KRELEASE=$KRELEASE
 export KCUSTOMNAME=$KCUSTOMNAME
 
+echo $KRELEASE $KCUSTOMNAME
+
 kmods=$(echo $KMODS | sed 's/,/\n/g')
 
 rm -f includes.lua
