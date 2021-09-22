@@ -138,6 +138,13 @@ do
       err = proc.pstatus or "exited"
     end
 
+    if proc.pid == 1 and exit ~= 0 then
+      for line in err:gmatch("[^\n]+") do
+        k.log(k.loglevels.error, line)
+      end
+      k.panic("Attempted to kill init!")
+    end
+
     err = err or "died"
     if (k.cmdline.log_process_death and
         k.cmdline.log_process_death ~= 0) then

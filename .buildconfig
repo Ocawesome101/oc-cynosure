@@ -1,4 +1,4 @@
 KMODS=extra/net/base,extra/ustty
-KRELEASE=1.9.2
+KRELEASE=$(cat /tmp/ulos/versions/cynosure ../versions/cynosure)
 KCUSTOMNAME=default
 BOOTSPLASH=$BOOTSPLASH||base/bootsplash
