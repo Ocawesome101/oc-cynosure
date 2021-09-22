@@ -1,8 +1,10 @@
 #!/bin/bash
 
+set +e
 source .buildconfig
 export KRELEASE=$KRELEASE
 export KCUSTOMNAME=$KCUSTOMNAME
+set -e
 
 kmods=$(echo $KMODS | sed 's/,/\n/g')
 
