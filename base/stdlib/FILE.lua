@@ -174,7 +174,7 @@ do
       self:write_byte(char)
     end
 
-    return true
+    return self
   end
 
   function buffer:seek(whence, offset)
