@@ -108,6 +108,22 @@ do
     
     return true
   end
+  
+  function api.message(proc, ...)
+    checkArg(1, proc, "number")
+
+    if not processes[proc] then
+      return nil, "no such process"
+    end
+
+    if select("#", ...) > 0 then
+      processes[proc]:push_signal("ipc", current, ...)
+    else
+      return nil, "signal data too short"
+    end
+
+    return true
+  end
 
   -- XXX: this is specifically for kernel use ***only*** - userspace does NOT
   -- XXX: get this function.  it is incredibly dangerous and should be used with
@@ -352,6 +368,7 @@ do
     end
     
     p.info = api.info
+    p.message = api.message
 
     p.signals = k.util.copy_table(api.signals)
   end)
