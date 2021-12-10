@@ -23,7 +23,8 @@ if (not k.cmdline.no_force_yields) then
     return s
   end
 
-  local function process(chunk)
+  local process
+  process = function(chunk)
     local i = 1
     local ret = ""
     local nq = 0
@@ -35,7 +36,12 @@ if (not k.cmdline.no_force_yields) then
         i = nextquote + 1
         nq = nq + 1
         if nq % 2 == 1 then
-          ch = process_section(ch)
+          -- the quote check might skip multiline strings, so use recursion and
+          -- avoid that.  i tried checking for multiline definitions at the same
+          -- time as quotes, but that was far too slow to be practical thanks to
+          -- the fact that OpenComputers wraps the Lua pattern matching
+          -- functions.
+          ch = process(ch)
         end
         ret = ret .. ch
       else
