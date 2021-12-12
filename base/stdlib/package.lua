@@ -198,6 +198,33 @@ do
         perms.user.COMPONENTS)
     end
     
+    local cpushsig = computer.pushSignal
+    local pushSignal
+    if k.cmdline["pushSignal.localized"] then
+      pushSignal = function(...)
+          return k.scheduler.info().data.self:push_signal(...)
+      end
+    elseif k.cmdline["pushSignal.unprotected"] then
+      k.log(k.loglevels.warn, "\27[101;97mWARNING\27[m got kernel argument pushSignal.unprotected=1 but that option is dangerous - proceeding anyway")
+      pushSignal = computer.pushSignal
+    else
+      -- blacklist these
+      local blacklist = {
+        key_down = true,
+        key_up = true,
+        component_added = true,
+        component_removed = true
+      }
+      pushSignal = function(s, ...)
+        checkArg(1, s, "string")
+        if not blacklist[s] then
+          return cpushsig(s, ...)
+        else
+          error("signal " .. s .. " cannot be created by userspace")
+        end
+      end
+    end
+    
     k.userspace.package.loaded.computer = {
       getDeviceInfo = wrap(computer.getDeviceInfo, perms.user.HWINFO),
       setArchitecture = wrap(computer.setArchitecture, perms.user.SETARCH),
@@ -205,9 +232,7 @@ do
       removeUser = wrap(computer.removeUser, perms.user.MANAGE_USERS),
       setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR),
       pullSignal = coroutine.yield,
-      pushSignal = function(...)
-        return k.scheduler.info().data.self:push_signal(...)
-      end
+      pushSignal = pushSignal
     }
     
     for f, v in pairs(computer) do

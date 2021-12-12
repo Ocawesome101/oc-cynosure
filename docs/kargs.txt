@@ -36,3 +36,9 @@ The following kernel arguments are supported by the Cynosure kernel.
 
   tty.colors=N:HEXCOL,N:HEXCOL,...
     Change one or more specific TTY colors.  N is the index starting from 0, and HEXCOL is a 24-bit hexadecimal color **without** a prefix (for example, a:f2abac is valid, but 0:0x2dfe is not).
+
+  pushSignal.localized
+    Make `computer.pushSignal` only push signals locally to a process.  Signal filtering is disabled in this mode.
+
+  pushSignal.unprotected
+    Disable `computer.pullSignal`'s signal filtering.  The kernel will print a warning when using this mode due to potential input spoofing or other confusion.
