@@ -82,7 +82,7 @@ do
       error(msg)
     end
     
-    k.log(k.loglevels.panic, "-- \27[91mbegin stacktrace\27[37m --")
+    k.log(k.loglevels.panic, "== \27[91mbegin stacktrace\27[37m ==")
     
     local traceback = debug.traceback(msg, 2)
       :gsub("\t", "  ")
@@ -93,7 +93,7 @@ do
       k.log(k.loglevels.panic, line)
     end
 
-    k.log(k.loglevels.panic, "-- \27[91mend stacktrace\27[37m --")
+    k.log(k.loglevels.panic, "== \27[91mend stacktrace\27[37m ==")
     k.log(k.loglevels.panic, "\27[93m!! \27[91mPANIC\27[93m !!\27[37m")
     
     while true do raw_pullsignal() end

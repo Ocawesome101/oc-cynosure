@@ -16,5 +16,5 @@ for mod in $kmods; do
   echo "--#include \"$mod.lua\"" >> includes.lua
 done
 
-$PREPROCESSOR init.lua kernel.lua
+$PREPROCESSOR init.lua kernel.lua -strip-comments
 rm -f includes.lua

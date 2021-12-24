@@ -90,7 +90,7 @@ if (not k.cmdline.no_force_yields) then
 
     if k.cmdline.debug_load then
       local handle = io.open("/load.txt", "a")
-      handle:write(" -- load: ", name or "(no name)", " --\n", chunk)
+      handle:write(" == load: ", name or "(no name)", " ==\n", chunk)
       handle:close()
     end
 
