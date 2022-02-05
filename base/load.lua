@@ -16,58 +16,60 @@ if (not k.cmdline.no_force_yields) then
 
   local max_time = tonumber(k.cmdline.max_process_time) or 0.1
 
-  local function process_section(s)
+  local function gsub(s)
     for i=1, #patterns, 1 do
       s = s:gsub(patterns[i][1], patterns[i][2])
     end
     return s
   end
 
-  local process
-  process = function(chunk)
-    local i = 1
-    local ret = ""
-    local nq = 0
-    local in_blocks = {}
-    while true do
-      local nextquote = chunk:find("[^\\][\"']", i)
-      if nextquote then
-        local ch = chunk:sub(i, nextquote)
-        i = nextquote + 1
-        nq = nq + 1
-        if nq % 2 == 1 then
-          -- the quote check might skip multiline strings, so use recursion and
-          -- avoid that.  i tried checking for multiline definitions at the same
-          -- time as quotes, but that was far too slow to be practical thanks to
-          -- the fact that OpenComputers wraps the Lua pattern matching
-          -- functions.
-          ch = process(ch)
-        end
-        ret = ret .. ch
-      else
-        local nbs, nbe = chunk:find("%[=*%[", i)
-        if nbs and nbe then
-          ret = ret .. process_section(chunk:sub(i, nbs - 1))
-          local match = chunk:find("%]" .. ("="):rep((nbe - nbs) - 1) .. "%]")
-          if not match then
-            -- the Lua parser will error here, no point in processing further
-            ret = ret .. chunk:sub(nbs)
-            break
-          end
-          local ch = chunk:sub(nbs, match)
-          ret = ret .. ch --:sub(1,-2)
-          i = match + 1
+  local function process(code)
+    local wrapped = ""
+    local in_str = false
+
+    while #code > 0 do
+      local chunk, quote = code:match("(.-)([%[\"'])()")
+      if not quote then
+        wrapped = wrapped .. code
+        break
+      end
+      code = code:sub(#chunk + 2)
+      if quote == '"' or quote == "'" then
+        if in_str == quote then
+          in_str = false
+          wrapped = wrapped .. chunk .. quote
+        elseif not in_str then
+          in_str = quote
+          wrapped = wrapped .. chunk .. quote
         else
-          ret = ret .. process_section(chunk:sub(i))
-          i = #chunk
-          break
+          wrapped = wrapped .. gsub(chunk) .. quote
+        end
+      elseif quote == "[" then
+        local prefix = "%]"
+        if code:sub(1,1) == "[" then
+          prefix = "%]%]"
+          code = code:sub(2)
+          wrapped = wrapped .. gsub(chunk) .. quote .. "["
+        elseif code:sub(1,1) == "=" then
+          local pch = code:match("(=-%[)")
+          if not pch then -- syntax error
+            return wrapped .. chunk .. quote .. code
+          end
+          prefix = prefix .. pch:sub(1, -2) .. "%]"
+          code = code:sub(#pch+1)
+          wrapped = wrapped .. gsub(chunk) .. "[" .. pch
+        else
+          wrapped = wrapped .. gsub(chunk) .. quote
+        end
+
+        if #prefix > 2 then
+          local strend = code:match(".-"..prefix)
+          code = code:sub(#strend+1)
+          wrapped = wrapped .. strend
         end
       end
     end
-
-    if i < #chunk then ret = ret .. process_section(chunk:sub(i)) end
-
-    return ret
+    return wrapped
   end
 
   function _G.load(chunk, name, mode, env)
