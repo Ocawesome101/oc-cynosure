@@ -28,11 +28,11 @@ if (not k.cmdline.no_force_yields) then
     local in_str = false
 
     while #code > 0 do
-      local chunk, quote = code:match("(.-)([%[\"'])()")
-      if not quote then
-        wrapped = wrapped .. code
+      if not (code:find('"', nil, true) or code:find("'", nil, true) or code:find("[", nil, true)) then
+        wrapped = wrapped .. gsub(code)
         break
       end
+      local chunk, quote = code:match("(.-)([%[\"'])")
       code = code:sub(#chunk + 2)
       if quote == '"' or quote == "'" then
         if in_str == quote then
@@ -40,7 +40,7 @@ if (not k.cmdline.no_force_yields) then
           wrapped = wrapped .. chunk .. quote
         elseif not in_str then
           in_str = quote
-          wrapped = wrapped .. chunk .. quote
+          wrapped = wrapped .. gsub(chunk) .. quote
         else
           wrapped = wrapped .. gsub(chunk) .. quote
         end
@@ -51,13 +51,14 @@ if (not k.cmdline.no_force_yields) then
           code = code:sub(2)
           wrapped = wrapped .. gsub(chunk) .. quote .. "["
         elseif code:sub(1,1) == "=" then
-          local pch = code:match("(=-%[)")
+          local pch = code:find("(=-%[)")
           if not pch then -- syntax error
             return wrapped .. chunk .. quote .. code
           end
-          prefix = prefix .. pch:sub(1, -2) .. "%]"
-          code = code:sub(#pch+1)
-          wrapped = wrapped .. gsub(chunk) .. "[" .. pch
+          local e = code:sub(1, pch)
+          prefix = prefix .. e .. "%]"
+          code = code:sub(pch+#e+1)
+          wrapped = wrapped .. gsub(chunk) .. "[" .. e .. "["
         else
           wrapped = wrapped .. gsub(chunk) .. quote
         end
@@ -102,13 +103,13 @@ if (not k.cmdline.no_force_yields) then
     if not ok then
       return nil, err
     end
-    
+
     local ysq = {}
     return function(...)
       local last_yield = computer.uptime()
       local old_iyield = env.__internal_yield
       local old_cyield = env.coroutine.yield
-      
+
       env.__internal_yield = function(tto)
         if computer.uptime() - last_yield >= (tto or max_time) then
           last_yield = computer.uptime()
@@ -116,7 +117,7 @@ if (not k.cmdline.no_force_yields) then
           if msg.n > 0 then ysq[#ysq+1] = msg end
         end
       end
-      
+
       env.coroutine.yield = function(...)
         if #ysq > 0 then
           return table.unpack(table.remove(ysq, 1))
@@ -126,7 +127,7 @@ if (not k.cmdline.no_force_yields) then
         ysq[#ysq+1] = msg
         return table.unpack(table.remove(ysq, 1))
       end
-      
+
       local result = table.pack(ok(...))
       env.__internal_yield = old_iyield
       env.coroutine.yield = old_cyield
